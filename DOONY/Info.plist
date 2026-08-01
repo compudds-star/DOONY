@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- ===== Location usage strings (shown in the permission prompts) ===== -->
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>DOONY records whether each day is spent inside or outside New York State to support your residency day-count. Location never leaves your device.</string>
+
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>DOONY needs Always access so it can record your NY vs non-NY days in the background — including after a reboot and while the app is closed. All location data stays on your device and is never uploaded.</string>
+
+    <!-- Legacy key for older OS versions -->
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>DOONY records your NY vs non-NY days in the background so your residency day-count stays accurate. Data stays on-device.</string>
+
+    <!-- Reduced-accuracy explanation (if the user grants only approximate location) -->
+    <key>NSLocationTemporaryUsageDescriptionDictionary</key>
+    <dict>
+        <key>BorderPrecision</key>
+        <string>Precise location is used only near the New York border to determine which side of the state line you are on. It is never uploaded.</string>
+    </dict>
+
+    <!-- ===== Background execution ===== -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>location</string>
+    </array>
+
+    <!-- ===== Encryption export compliance =====
+         The app uses only standard, exempt encryption (Apple CryptoKit / data
+         protection) for on-device storage. Declared exempt. -->
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
+
+    <!-- Data protection is enabled via DOONY.entitlements
+         (com.apple.developer.default-data-protection). -->
+
+    <key>UILaunchScreen</key>
+    <dict/>
+
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+    </array>
+</dict>
+</plist>
