@@ -57,8 +57,8 @@ def make(path,size=1024):
     bg=Image.composite(white,bg,mask)
     d=ImageDraw.Draw(bg)
     centered(d,S,"Days",int(S*0.135),int(S*0.20),(255,255,255),int(S*0.004),(200,60,80))
-    middle_line(d,S,int(S*0.745),int(S*0.078),(255,255,255),(200,60,80))  # white, below pin
-    centered(d,S,"NY",int(S*0.855),int(S*0.185),(255,255,255),int(S*0.004),(200,60,80))
+    centered(d,S,"out of",int(S*0.742),int(S*0.078),(255,255,255),int(S*0.004),(200,60,80))  # lowercase, white
+    centered(d,S,"NY",int(S*0.870),int(S*0.185),(255,255,255),int(S*0.004),(200,60,80))
     bg=bg.resize((size,size),Image.LANCZOS).convert("RGB")
     bg.save(path); print("wrote",path)
 
