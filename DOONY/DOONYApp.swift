@@ -20,15 +20,20 @@ struct DOONYApp: App {
         let storeURL = URL.applicationSupportDirectory.appending(path: "DOONY.store")
         let config = ModelConfiguration(schema: schema, url: storeURL, cloudKitDatabase: .none)
 
+        let modelContainer: ModelContainer
         do {
-            container = try ModelContainer(for: schema, configurations: config)
+            modelContainer = try ModelContainer(for: schema, configurations: config)
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
+        container = modelContainer
 
         DOONYApp.applyStoreProtection(storeURL: storeURL)
 
-        _locationManager = StateObject(wrappedValue: LocationManager(container: container))
+        // Use the LOCAL `modelContainer` (not the stored `container` property) here:
+        // StateObject takes an @autoclosure, and referencing a stored property
+        // inside it would capture the still-initializing `self`.
+        _locationManager = StateObject(wrappedValue: LocationManager(container: modelContainer))
     }
 
     var body: some Scene {
