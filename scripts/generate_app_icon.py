@@ -1,66 +1,72 @@
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
-import math
-OUT="/tmp/icons"; FONT="/mnt/skills/examples/canvas-design/canvas-fonts/Outfit-Bold.ttf"
+from PIL import Image, ImageDraw, ImageFont
+SS=4; OUT="/tmp/icons"
+MONO="/mnt/skills/examples/canvas-design/canvas-fonts/JetBrainsMono-Bold.ttf"
 
-def lerp(a,b,t): return tuple(int(a[i]+(b[i]-a[i])*t) for i in range(3))
-def vgrad(S, top, bot):
-    img=Image.new("RGB",(S,S)); px=img.load()
-    for y in range(S):
-        c=lerp(top,bot,y/(S-1))
-        for x in range(S): px[x,y]=c
-    return img
-def pin_mask(S,cx,cy,R,tip_y,hole_r):
-    m=Image.new("L",(S,S),0); d=ImageDraw.Draw(m)
-    d.ellipse([cx-R,cy-R,cx+R,cy+R],fill=255)
-    dist=tip_y-cy
-    if dist>R:
-        a=math.acos(R/dist); L=math.sqrt(dist*dist-R*R)
-        th=-math.pi/2
-        t1=(cx+math.cos(th+a)*L, tip_y+math.sin(th+a)*L)
-        t2=(cx+math.cos(th-a)*L, tip_y+math.sin(th-a)*L)
-        d.polygon([(cx,tip_y),t1,t2],fill=255)
-    d.ellipse([cx-hole_r,cy-hole_r,cx+hole_r,cy+hole_r],fill=0)
-    return m
-def centered(d,S,text,cy,size,fill,stroke=0,sfill=None):
-    f=ImageFont.truetype(FONT,int(size))
-    d.text((S/2,cy),text,font=f,fill=fill,anchor="mm",stroke_width=stroke,stroke_fill=sfill)
-
-def pin_o(d,cx,cy,r,color,w):
-    d.ellipse([cx-r,cy-r,cx+r,cy+r],outline=color,width=int(w))
-    d.polygon([(cx,cy+r*1.55),(cx-r*0.58,cy+r*0.40),(cx+r*0.58,cy+r*0.40)],fill=color)
-
-def middle_line(d,S,cy,size,color,sfill=None):
-    f=ImageFont.truetype(FONT,int(size))
-    t1="ut "; t2="f"
-    w1=d.textlength(t1,font=f); w2=d.textlength(t2,font=f)
-    od=size*0.98; r=od/2
-    total=od+w1+od+w2
-    x=(S-total)/2
-    sw=int(size*0.045)
-    pin_o(d,x+r,cy,r*0.86,color,r*0.40); x+=od
-    d.text((x,cy),t1,font=f,fill=color,anchor="lm",stroke_width=sw,stroke_fill=sfill); x+=w1
-    pin_o(d,x+r,cy,r*0.86,color,r*0.40); x+=od
-    d.text((x,cy),t2,font=f,fill=color,anchor="lm",stroke_width=sw,stroke_fill=sfill)
-
-def make(path,size=1024):
+def make(path, size=1024, letter=(240,236,222)):
     S=size*SS
-    top,bottom=(255,150,58),(255,74,122)
-    bg=vgrad(S,top,bottom).convert("RGBA")
-    cx=S//2
-    # pin lowered slightly
-    pin_cy,pin_R,pin_tip,hole=0.435,0.145,0.63,0.055
-    mask=pin_mask(S,cx,int(S*pin_cy),int(S*pin_R),int(S*pin_tip),int(S*hole))
-    sh=Image.new("RGBA",(S,S),(90,20,45,255))
-    sh.putalpha(mask.filter(ImageFilter.GaussianBlur(S*0.016)).point(lambda v:int(v*0.28)))
-    bg.alpha_composite(sh,(int(S*0.01),int(S*0.012)))
-    white=Image.new("RGBA",(S,S),(255,255,255,255))
-    bg=Image.composite(white,bg,mask)
+    bg=Image.new("RGB",(S,S),(12,12,14))
+    # subtle vignette (lighter center)
+    d=ImageDraw.Draw(bg,"RGBA")
+    cxp,cyp=S/2,S/2
+    import math
+    # simple radial glow
+    glow=Image.new("L",(S,S),0); gd=ImageDraw.Draw(glow)
+    gd.ellipse([S*0.12,S*0.12,S*0.88,S*0.88],fill=60)
+    from PIL import ImageFilter
+    glow=glow.filter(ImageFilter.GaussianBlur(S*0.12))
+    tint=Image.new("RGB",(S,S),(40,40,48))
+    bg=Image.composite(tint,bg,glow)
     d=ImageDraw.Draw(bg)
-    centered(d,S,"Days",int(S*0.135),int(S*0.20),(255,255,255),int(S*0.004),(200,60,80))
-    centered(d,S,"out of",int(S*0.742),int(S*0.078),(255,255,255),int(S*0.004),(200,60,80))  # lowercase, white
-    centered(d,S,"NY",int(S*0.870),int(S*0.185),(255,255,255),int(S*0.004),(200,60,80))
+
+    rows=["Days","Out Of","NY"]
+    cols=max(len(r) for r in rows)   # 6
+    margin_x=S*0.075
+    avail=S-2*margin_x
+    gap=0.0
+    # tile width from cols with inter-tile gap = 0.11*tw
+    g=0.11
+    tw=avail/(cols+g*(cols-1))
+    gapx=tw*g
+    th=tw*1.34
+    gapy=th*0.20
+    total_h=3*th+2*gapy
+    y0=(S-total_h)/2
+
+    fsize=int(th*0.60)
+    f=ImageFont.truetype(MONO,fsize)
+    seam_w=max(2,int(S*0.0035))
+    rad=int(tw*0.10)
+
+    for ri,text in enumerate(rows):
+        n=len(text)
+        row_w=n*tw+(n-1)*gapx
+        x0=(S-row_w)/2
+        ty=y0+ri*(th+gapy)
+        for ci,ch in enumerate(text):
+            tx=x0+ci*(tw+gapx)
+            box=[tx,ty,tx+tw,ty+th]
+            # tile base
+            d.rounded_rectangle(box,radius=rad,fill=(30,30,34))
+            # top-half slightly lighter for 3D
+            midy=ty+th/2
+            d.rounded_rectangle([tx,ty,tx+tw,midy+rad],radius=rad,fill=(38,38,43))
+            d.rectangle([tx,midy-1,tx+tw,midy+rad],fill=(38,38,43))
+            d.rounded_rectangle([tx,midy,tx+tw,ty+th],radius=rad,fill=(26,26,30))
+            d.rectangle([tx,midy,tx+tw,midy+2],fill=(26,26,30))
+            # top edge highlight
+            d.line([(tx+rad,ty+seam_w),(tx+tw-rad,ty+seam_w)],fill=(70,70,78),width=max(1,seam_w//2))
+            # letter (skip space)
+            if ch!=" ":
+                d.text((tx+tw/2,ty+th/2),ch,font=f,fill=letter,anchor="mm")
+            # split-flap seam across middle (over glyph)
+            d.rectangle([tx,midy-seam_w//2,tx+tw,midy+seam_w//2],fill=(9,9,11))
+            # tiny side pivots
+            pr=max(2,int(tw*0.03))
+            d.ellipse([tx-pr, midy-pr, tx+pr, midy+pr],fill=(70,70,76))
+            d.ellipse([tx+tw-pr, midy-pr, tx+tw+pr, midy+pr],fill=(70,70,76))
+
     bg=bg.resize((size,size),Image.LANCZOS).convert("RGB")
     bg.save(path); print("wrote",path)
 
-SS=4
-make(f"{OUT}/text_pin2.png")
+make(f"{OUT}/board_white.png", letter=(242,238,224))
+make(f"{OUT}/board_amber.png", letter=(255,196,72))
