@@ -27,19 +27,20 @@ def centered(d,S,text,cy,size,fill,stroke=0,sfill=None):
 
 def pin_o(d,cx,cy,r,color,w):
     d.ellipse([cx-r,cy-r,cx+r,cy+r],outline=color,width=int(w))
-    d.polygon([(cx,cy+r*1.95),(cx-r*0.62,cy+r*0.45),(cx+r*0.62,cy+r*0.45)],fill=color)
+    d.polygon([(cx,cy+r*1.55),(cx-r*0.58,cy+r*0.40),(cx+r*0.58,cy+r*0.40)],fill=color)
 
-def middle_line(d,S,cy,size,color):
+def middle_line(d,S,cy,size,color,sfill=None):
     f=ImageFont.truetype(FONT,int(size))
     t1="ut "; t2="f"
     w1=d.textlength(t1,font=f); w2=d.textlength(t2,font=f)
     od=size*0.98; r=od/2
     total=od+w1+od+w2
     x=(S-total)/2
-    pin_o(d,x+r,cy,r*0.86,color,r*0.36); x+=od
-    d.text((x,cy),t1,font=f,fill=color,anchor="lm"); x+=w1
-    pin_o(d,x+r,cy,r*0.86,color,r*0.36); x+=od
-    d.text((x,cy),t2,font=f,fill=color,anchor="lm")
+    sw=int(size*0.045)
+    pin_o(d,x+r,cy,r*0.86,color,r*0.40); x+=od
+    d.text((x,cy),t1,font=f,fill=color,anchor="lm",stroke_width=sw,stroke_fill=sfill); x+=w1
+    pin_o(d,x+r,cy,r*0.86,color,r*0.40); x+=od
+    d.text((x,cy),t2,font=f,fill=color,anchor="lm",stroke_width=sw,stroke_fill=sfill)
 
 def make(path,size=1024):
     S=size*SS
@@ -56,8 +57,8 @@ def make(path,size=1024):
     bg=Image.composite(white,bg,mask)
     d=ImageDraw.Draw(bg)
     centered(d,S,"Days",int(S*0.135),int(S*0.20),(255,255,255),int(S*0.004),(200,60,80))
-    middle_line(d,S,int(S*0.735),int(S*0.082),(233,66,110))   # nudged down, below pin
-    centered(d,S,"NY",int(S*0.885),int(S*0.185),(255,255,255),int(S*0.004),(200,60,80))
+    middle_line(d,S,int(S*0.745),int(S*0.078),(255,255,255),(200,60,80))  # white, below pin
+    centered(d,S,"NY",int(S*0.855),int(S*0.185),(255,255,255),int(S*0.004),(200,60,80))
     bg=bg.resize((size,size),Image.LANCZOS).convert("RGB")
     bg.save(path); print("wrote",path)
 
