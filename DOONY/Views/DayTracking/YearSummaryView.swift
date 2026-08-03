@@ -103,7 +103,7 @@ struct YearSummaryView: View {
                 Text("DAYS OUT OF NY")
                     .font(.caption).bold().tracking(3)
                     .foregroundStyle(.white.opacity(0.7))
-                FlapText(text: String(counts.nonNY), size: 58)
+                FlapText(text: String(counts.nonNY), size: 58, textColor: Flap.green)
                 Text("counting toward Florida residency")
                     .font(.caption2).foregroundStyle(.white.opacity(0.5))
             }
@@ -112,7 +112,7 @@ struct YearSummaryView: View {
 
             HStack(alignment: .top, spacing: 40) {
                 FlapStat(label: "NY DAYS", value: counts.ny, size: 30,
-                         textColor: counts.ny >= 183 ? Color(red: 1, green: 0.4, blue: 0.4) : Flap.amber)
+                         textColor: Flap.red)
                 FlapStat(label: "UNVERIFIED", value: counts.unverified, size: 30,
                          textColor: .white.opacity(0.85))
             }

@@ -4,6 +4,8 @@ import SwiftUI
 /// app icon: amber characters on dark tiles with a center seam and side pivots.
 enum Flap {
     static let amber = Color(red: 1.0, green: 0.77, blue: 0.28)
+    static let green = Color(red: 0.30, green: 0.82, blue: 0.45)   // out of NY
+    static let red = Color(red: 1.0, green: 0.42, blue: 0.42)      // NY days
     static let tileTop = Color(red: 0.15, green: 0.15, blue: 0.17)
     static let tileBottom = Color(red: 0.10, green: 0.10, blue: 0.12)
     static let seam = Color.black.opacity(0.9)
