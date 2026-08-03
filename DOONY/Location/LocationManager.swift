@@ -35,6 +35,13 @@ final class LocationManager: NSObject, ObservableObject {
     @Published private(set) var isPreciseEscalated = false
     @Published private(set) var lastFix: CLLocation?
 
+    /// True when Info.plist's UIBackgroundModes contains "location". Guards the
+    /// `allowsBackgroundLocationUpdates` setter, which throws otherwise.
+    private static let backgroundLocationModeEnabled: Bool = {
+        let modes = Bundle.main.object(forInfoDictionaryKey: "UIBackgroundModes") as? [String]
+        return modes?.contains("location") ?? false
+    }()
+
     private let manager = CLLocationManager()
     private let boundary = GeoBoundary.shared
     private let container: ModelContainer
@@ -45,7 +52,11 @@ final class LocationManager: NSObject, ObservableObject {
         super.init()
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
-        manager.allowsBackgroundLocationUpdates = true
+        // Only legal when the "location" background mode is declared in Info.plist;
+        // setting it otherwise throws NSInternalInconsistencyException at launch.
+        if Self.backgroundLocationModeEnabled {
+            manager.allowsBackgroundLocationUpdates = true
+        }
         manager.pausesLocationUpdatesAutomatically = false
         manager.showsBackgroundLocationIndicator = false
         authorizationStatus = manager.authorizationStatus

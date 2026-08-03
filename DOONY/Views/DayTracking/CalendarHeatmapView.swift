@@ -58,11 +58,11 @@ struct CalendarHeatmapView: View {
             DayDetailView(dayKey: key)
         } label: {
             Text(dayNum)
-                .font(.caption2)
-                .frame(maxWidth: .infinity, minHeight: 28)
+                .font(.caption)
+                .frame(maxWidth: .infinity, minHeight: 44) // HIG minimum tap target
                 .background(color(for: day))
                 .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
                 .overlay(alignment: .topTrailing) {
                     if day?.hasBorderAmbiguity == true {
                         Circle().fill(.white).frame(width: 5, height: 5).padding(2)
