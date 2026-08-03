@@ -144,6 +144,10 @@ struct YearSummaryView: View {
             }
             if location.authorizationStatus != .authorizedAlways {
                 Button(authButtonTitle) { handleAuthTap() }
+                if showSettingsFallback {
+                    Button("Open Settings instead") { openAppSettings() }
+                        .font(.footnote)
+                }
                 Text(authHelpText)
                     .font(.footnote).foregroundStyle(.secondary)
             }
@@ -153,21 +157,28 @@ struct YearSummaryView: View {
     private var authButtonTitle: String {
         switch location.authorizationStatus {
         case .notDetermined: return "Enable Location Access"
-        case .authorizedWhenInUse: return "Open Settings → set Location to “Always”"
+        case .authorizedWhenInUse: return "Upgrade to “Always” Location"
         case .denied, .restricted: return "Open Settings to enable Location"
         default: return "Open Settings"
+        }
+    }
+
+    private var showSettingsFallback: Bool {
+        switch location.authorizationStatus {
+        case .authorizedWhenInUse, .denied, .restricted: return true
+        default: return false
         }
     }
 
     private var authHelpText: String {
         switch location.authorizationStatus {
         case .notDetermined:
-            return "Grant location access, then set it to “Always” so days are recorded "
+            return "Grant location access, then choose “Always” so days are recorded "
                  + "in the background — including after reboots and while the app is closed."
         case .authorizedWhenInUse:
-            return "You granted “While Using”. iOS only offers the “Always” upgrade prompt "
-                 + "once, so tap above to open Settings ▸ Location ▸ Always, and turn on "
-                 + "Precise Location."
+            return "You granted “While Using”. Tap “Upgrade to Always” to ask iOS for "
+                 + "background access. If no prompt appears, use “Open Settings instead” "
+                 + "▸ Location ▸ Always, and turn on Precise Location."
         case .denied, .restricted:
             return "Location is currently off for DOONY. Open Settings ▸ Location ▸ Always "
                  + "so days can be recorded in the background."
@@ -176,12 +187,20 @@ struct YearSummaryView: View {
         }
     }
 
-    /// From a fresh install we can show the system prompt; once the user has
-    /// answered it, iOS won't re-prompt, so we deep-link to Settings instead.
+    /// Not-determined or While-Using → ask iOS (requestAlwaysAuthorization triggers
+    /// the Always upgrade prompt and makes “Always” selectable in Settings).
+    /// Denied/restricted can only be changed in Settings.
     private func handleAuthTap() {
-        if location.authorizationStatus == .notDetermined {
+        switch location.authorizationStatus {
+        case .notDetermined, .authorizedWhenInUse:
             location.requestAuthorization()
-        } else if let url = URL(string: UIApplication.openSettingsURLString) {
+        default:
+            openAppSettings()
+        }
+    }
+
+    private func openAppSettings() {
+        if let url = URL(string: UIApplication.openSettingsURLString) {
             openURL(url)
         }
     }
