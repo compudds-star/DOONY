@@ -14,14 +14,27 @@ struct CalendarHeatmapView: View {
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 3), count: 7)
 
     var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 16) {
-                ForEach(1...12, id: \.self) { month in
-                    monthSection(month)
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 16) {
+                    ForEach(1...12, id: \.self) { month in
+                        monthSection(month)
+                            .id(month)
+                    }
+                    legend
                 }
-                legend
+                .padding()
             }
-            .padding()
+            .onAppear {
+                // Open scrolled to the current month when viewing the current year.
+                let now = Date()
+                let cal = NYCalendar.calendar
+                let targetMonth = (cal.component(.year, from: now) == year)
+                    ? cal.component(.month, from: now) : 1
+                DispatchQueue.main.async {
+                    withAnimation(.none) { proxy.scrollTo(targetMonth, anchor: .top) }
+                }
+            }
         }
         .navigationTitle(String(year))
         .navigationBarTitleDisplayMode(.inline)
