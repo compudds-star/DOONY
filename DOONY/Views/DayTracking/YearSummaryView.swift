@@ -1,12 +1,14 @@
 import SwiftUI
 import SwiftData
 import CoreLocation
+import UIKit
 
 /// Landing screen: authorization state, running yearly counts on a split-flap
 /// board, and a calendar heatmap that drills into any day.
 struct YearSummaryView: View {
     @EnvironmentObject private var location: LocationManager
     @Environment(\.modelContext) private var context
+    @Environment(\.openURL) private var openURL
     @Query(sort: \DayClassification.dayKey) private var days: [DayClassification]
 
     @State private var selectedYear = NYCalendar.calendar.component(.year, from: .now)
@@ -141,11 +143,46 @@ struct YearSummaryView: View {
                 }
             }
             if location.authorizationStatus != .authorizedAlways {
-                Button("Enable Always-On Location") { location.requestAuthorization() }
-                Text("“Always” is required so days are recorded in the background, after "
-                   + "reboots, and while the app is closed.")
+                Button(authButtonTitle) { handleAuthTap() }
+                Text(authHelpText)
                     .font(.footnote).foregroundStyle(.secondary)
             }
+        }
+    }
+
+    private var authButtonTitle: String {
+        switch location.authorizationStatus {
+        case .notDetermined: return "Enable Location Access"
+        case .authorizedWhenInUse: return "Open Settings → set Location to “Always”"
+        case .denied, .restricted: return "Open Settings to enable Location"
+        default: return "Open Settings"
+        }
+    }
+
+    private var authHelpText: String {
+        switch location.authorizationStatus {
+        case .notDetermined:
+            return "Grant location access, then set it to “Always” so days are recorded "
+                 + "in the background — including after reboots and while the app is closed."
+        case .authorizedWhenInUse:
+            return "You granted “While Using”. iOS only offers the “Always” upgrade prompt "
+                 + "once, so tap above to open Settings ▸ Location ▸ Always, and turn on "
+                 + "Precise Location."
+        case .denied, .restricted:
+            return "Location is currently off for DOONY. Open Settings ▸ Location ▸ Always "
+                 + "so days can be recorded in the background."
+        default:
+            return "“Always” is required so days are recorded in the background."
+        }
+    }
+
+    /// From a fresh install we can show the system prompt; once the user has
+    /// answered it, iOS won't re-prompt, so we deep-link to Settings instead.
+    private func handleAuthTap() {
+        if location.authorizationStatus == .notDetermined {
+            location.requestAuthorization()
+        } else if let url = URL(string: UIApplication.openSettingsURLString) {
+            openURL(url)
         }
     }
 
