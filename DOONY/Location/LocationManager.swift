@@ -75,6 +75,19 @@ final class LocationManager: NSObject, ObservableObject {
         manager.requestLocation() // one immediate fix to seed classification & geofence
     }
 
+    /// Request a single fresh fix, e.g. each time the app becomes active. This
+    /// ensures a stationary day (where significant-location-change never fires)
+    /// still records at least one sample and is classified rather than left
+    /// Unverified. Silently no-ops until location is authorized.
+    func requestFreshFix() {
+        switch authorizationStatus {
+        case .authorizedAlways, .authorizedWhenInUse:
+            manager.requestLocation()
+        default:
+            break
+        }
+    }
+
     func stopTracking() {
         manager.stopMonitoringSignificantLocationChanges()
         manager.stopUpdatingLocation()

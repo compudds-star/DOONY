@@ -6,6 +6,7 @@ struct DOONYApp: App {
 
     let container: ModelContainer
     @StateObject private var locationManager: LocationManager
+    @Environment(\.scenePhase) private var scenePhase
 
     init() {
         let schema = Schema([
@@ -43,6 +44,14 @@ struct DOONYApp: App {
                 .onAppear { locationManager.startTracking() }
         }
         .modelContainer(container)
+        .onChange(of: scenePhase) { _, phase in
+            // Every time the app becomes active, log a fresh fix so a day spent
+            // stationary (where significant-location-change never fires) still
+            // gets at least one sample and is classified instead of Unverified.
+            if phase == .active {
+                locationManager.requestFreshFix()
+            }
+        }
     }
 
     /// Apply file protection to the SwiftData store and its sidecar files.
