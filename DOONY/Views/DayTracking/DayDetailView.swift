@@ -38,9 +38,13 @@ struct DayDetailView: View {
             Section("Manual override") {
                 Toggle("Override automatic status", isOn: $manualOn)
                 if manualOn {
+                    // Only real classifications — manually marking a day "Unverified"
+                    // is meaningless and was the default footgun that left days uncounted.
                     Picker("Status", selection: $overrideStatus) {
-                        ForEach(DayStatus.allCases, id: \.self) { Text($0.displayName).tag($0) }
+                        Text(DayStatus.nonNY.displayName).tag(DayStatus.nonNY)
+                        Text(DayStatus.ny.displayName).tag(DayStatus.ny)
                     }
+                    .pickerStyle(.segmented)
                 }
                 TextField("Note (e.g. flew to FL 6:00am, receipts attached)", text: $note, axis: .vertical)
                     .lineLimit(2...5)
@@ -75,7 +79,9 @@ struct DayDetailView: View {
         .onAppear {
             note = day?.note ?? ""
             manualOn = day?.manualOverride ?? false
-            overrideStatus = day?.status ?? .unverified
+            // Default an override to a definitive status: keep NY if it's already
+            // NY, otherwise default to "Out of NY" (never "Unverified").
+            overrideStatus = (day?.status == .ny) ? .ny : .nonNY
         }
     }
 
