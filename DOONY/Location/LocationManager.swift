@@ -45,7 +45,12 @@ final class LocationManager: NSObject, ObservableObject {
     private let manager = CLLocationManager()
     private let boundary = GeoBoundary.shared
     private let container: ModelContainer
-    private lazy var context = ModelContext(container)
+
+    /// Write through the container's MAIN context — the same one `@Query` observes
+    /// in the UI. Using a separate ModelContext here meant day reclassifications
+    /// weren't reliably reflected in the summary counts (a fixed day could stay
+    /// counted as Unverified). Safe because this class is @MainActor.
+    private var context: ModelContext { container.mainContext }
 
     init(container: ModelContainer) {
         self.container = container
