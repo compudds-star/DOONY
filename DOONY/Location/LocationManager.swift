@@ -27,7 +27,13 @@ import BackgroundTasks
 final class LocationManager: NSObject, ObservableObject {
 
     // Tunables
-    private let borderBufferMeters: Double = 3_000      // "near border" threshold
+    // "Near border" threshold: within this distance of the NY line a sample is
+    // flagged for review and precise GPS is engaged. 2 km keeps a safe margin
+    // over typical coarse-location error while not escalating (battery) at spots
+    // like a golf course ~3 km inside NY, which coarse location already places
+    // firmly in-state. Don't drop below ~1.5 km — inside ~1 km, location error
+    // can flip which side of the border you're on.
+    private let borderBufferMeters: Double = 2_000
     private let minGeofenceRadius: Double = 200
     private let maxGeofenceRadius: Double = 50_000      // 50 km cap (iOS practical limit ~ few hundred km)
     private let dynamicRegionId = "doony.dynamic.border"
