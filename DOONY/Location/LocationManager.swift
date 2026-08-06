@@ -2,6 +2,7 @@ import Foundation
 import CoreLocation
 import SwiftData
 import Combine
+import BackgroundTasks
 
 /// Owns all CoreLocation interaction and turns raw fixes into persisted samples
 /// and day classifications.
@@ -91,6 +92,59 @@ final class LocationManager: NSObject, ObservableObject {
         default:
             break
         }
+    }
+
+    private var isAuthorized: Bool {
+        authorizationStatus == .authorizedAlways || authorizationStatus == .authorizedWhenInUse
+    }
+
+    // MARK: - Daily background refresh
+    //
+    // A once-a-day background wake so a day spent entirely stationary (no
+    // significant-location-change, app never opened) still records a sample and
+    // is classified instead of left Unverified. Registered via SwiftUI's
+    // `.backgroundTask(.appRefresh:)`; the identifier is in Info.plist.
+
+    static let dailyFixTaskID = "com.doony.app.dailyfix"
+
+    /// Ask iOS to run our daily-fix task no sooner than ~12h from now. iOS
+    /// ultimately decides the timing based on usage and power.
+    static func scheduleDailyFix() {
+        let request = BGAppRefreshTaskRequest(identifier: dailyFixTaskID)
+        request.earliestBeginDate = Date().addingTimeInterval(12 * 60 * 60)
+        try? BGTaskScheduler.shared.submit(request)
+    }
+
+    private var oneShotContinuation: CheckedContinuation<Void, Never>?
+
+    /// Awaitably acquire one location fix, with a timeout so a background task
+    /// never hangs waiting for a fix that won't arrive (e.g. no signal).
+    func acquireOneFix(timeout: TimeInterval = 20) async {
+        guard isAuthorized else { return }
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask { @MainActor in
+                await withCheckedContinuation { continuation in
+                    self.oneShotContinuation = continuation
+                    self.manager.requestLocation()
+                }
+            }
+            group.addTask {
+                try? await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
+            }
+            _ = await group.next()   // whichever finishes first (fix or timeout)
+            // Resume the continuation now (if the timeout won) so the waiting
+            // child task can complete and the group can return without hanging.
+            self.resolveOneShot()
+            group.cancelAll()
+        }
+    }
+
+    /// Idempotently resume the pending one-shot continuation (guarded against
+    /// double-resume from both the delegate and the timeout).
+    private func resolveOneShot() {
+        guard let continuation = oneShotContinuation else { return }
+        oneShotContinuation = nil
+        continuation.resume()
     }
 
     func stopTracking() {
@@ -217,6 +271,7 @@ extension LocationManager: CLLocationManagerDelegate {
             for loc in locations where loc.horizontalAccuracy >= 0 {
                 self.process(loc, source: source)
             }
+            self.resolveOneShot()
         }
     }
 
@@ -236,5 +291,6 @@ extension LocationManager: CLLocationManagerDelegate {
         #if DEBUG
         print("[DOONY] location error: \(error.localizedDescription)")
         #endif
+        Task { @MainActor in self.resolveOneShot() }
     }
 }

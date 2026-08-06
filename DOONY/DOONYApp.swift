@@ -45,12 +45,25 @@ struct DOONYApp: App {
         }
         .modelContainer(container)
         .onChange(of: scenePhase) { _, phase in
-            // Every time the app becomes active, log a fresh fix so a day spent
-            // stationary (where significant-location-change never fires) still
-            // gets at least one sample and is classified instead of Unverified.
-            if phase == .active {
+            switch phase {
+            case .active:
+                // Every time the app becomes active, log a fresh fix so a day
+                // spent stationary (where significant-location-change never
+                // fires) still gets a sample and is classified, not Unverified.
                 locationManager.requestFreshFix()
+            case .background:
+                // Queue the once-a-day background wake so quiet days still record
+                // a sample even if the app is never opened that day.
+                LocationManager.scheduleDailyFix()
+            default:
+                break
             }
+        }
+        // iOS runs this in the background ~once a day: grab one fix (classifying
+        // today) and re-arm the next day's request.
+        .backgroundTask(.appRefresh(LocationManager.dailyFixTaskID)) {
+            await locationManager.acquireOneFix()
+            LocationManager.scheduleDailyFix()
         }
     }
 
