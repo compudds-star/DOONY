@@ -245,13 +245,21 @@ final class LocationManager: NSObject, ObservableObject {
         if distanceToBorder <= borderBufferMeters {
             if !isPreciseEscalated {
                 isPreciseEscalated = true
-                manager.desiredAccuracy = kCLLocationAccuracyBest
+                // NearestTenMeters — not Best/BestForNavigation. ~10 m resolves
+                // which side of the state line you're on (and already beats the
+                // bundled boundary's own precision), while drawing far less power
+                // than Best, which streamed continuously for hours near the border.
+                manager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
+                // Only report movement of 25 m+, so a stationary phone near the
+                // line isn't firing constant updates.
+                manager.distanceFilter = 25
                 manager.startUpdatingLocation()
             }
         } else {
             if isPreciseEscalated {
                 isPreciseEscalated = false
                 manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+                manager.distanceFilter = kCLDistanceFilterNone
                 manager.stopUpdatingLocation()
             }
         }
