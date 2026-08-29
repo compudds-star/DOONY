@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Data Protection capability: makes NSFileProtectionComplete the DEFAULT
+         class for files the app doesn't otherwise protect. The sensitive data is
+         ALSO protected explicitly in code (the SwiftData store and the encrypted
+         attachment blobs), so this entitlement is belt-and-suspenders.
+
+         If signing fails with "provisioning profile doesn't include the
+         com.apple.developer.default-data-protection entitlement", let Xcode
+         regenerate the profile (Automatically manage signing ON) or empty this
+         file back to <dict/> — the app still encrypts its data either way. -->
+    <key>com.apple.developer.default-data-protection</key>
+    <string>NSFileProtectionComplete</string>
+</dict>
+</plist>
