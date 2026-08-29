@@ -14,20 +14,29 @@ needs a public URL).
 Required for every app, including ones that collect nothing. It must be a
 **public** URL that Apple can load without signing in.
 
-The `DOONY` repo is private, so GitHub Pages can't serve it from there on a free
-plan. Options, best first:
+**This is served from this repo via GitHub Pages:**
 
-1. **A small public repo with Pages.** Create e.g. `doony-privacy`, drop
-   `PRIVACY.md` in as `index.md`, enable Pages, and you get a stable
-   `https://compudds-star.github.io/doony-privacy/`. Free, and the URL never
-   changes as long as the repo exists.
-2. **A public Gist.** Fastest. Use the Gist's own page URL, not the `raw` one —
-   raw URLs carry a revision hash and change on every edit.
-3. **A domain you already own**, if there is one.
+> ## https://compudds-star.github.io/DOONY/
 
-Whichever you pick, fill in the contact address at the bottom of `PRIVACY.md`
-first. That page is public; use an address you're willing to expose rather than
-your primary personal one.
+`docs/index.html` is the page; `docs/.nojekyll` tells Pages to serve it as-is
+rather than running it through Jekyll. `docs/PRIVACY.md` is the same text in
+Markdown, kept alongside it as the reviewable source.
+
+To (re-)enable Pages after a fresh clone or if it gets switched off:
+**Settings → Pages → Source: Deploy from a branch → `main` / `/docs`**, or
+
+```bash
+gh api -X POST repos/compudds-star/DOONY/pages \
+  -f 'source[branch]=main' -f 'source[path]=/docs'
+```
+
+Pages serves from `main`, so a change to the policy is only live once it is
+merged there — editing it on a feature branch changes nothing publicly.
+
+⚠️ **Fill in the contact address at the bottom of `docs/index.html` and
+`docs/PRIVACY.md` before giving this URL to Apple.** Both still read
+`CONTACT_EMAIL_HERE`. The page is world-readable, so use an address you are
+willing to expose rather than a primary personal one.
 
 Enter the URL in App Store Connect under **App Information → Privacy Policy
 URL** (it is set per app, not per build).
