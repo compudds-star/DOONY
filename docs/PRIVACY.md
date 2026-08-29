@@ -74,7 +74,5 @@ If this policy changes, the "last updated" date above will change with it.
 
 ## Contact
 
-<!-- REPLACE with the contact address you want published. Apple requires a
-     working contact method here, and this page is public — use an address you
-     are comfortable exposing rather than a primary personal one. -->
-CONTACT_EMAIL_HERE
+Questions about this policy, or about the app's handling of your data:
+<compudds@gmail.com>

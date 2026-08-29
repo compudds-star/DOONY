@@ -33,11 +33,6 @@ gh api -X POST repos/compudds-star/DOONY/pages \
 Pages serves from `main`, so a change to the policy is only live once it is
 merged there — editing it on a feature branch changes nothing publicly.
 
-⚠️ **Fill in the contact address at the bottom of `docs/index.html` and
-`docs/PRIVACY.md` before giving this URL to Apple.** Both still read
-`CONTACT_EMAIL_HERE`. The page is world-readable, so use an address you are
-willing to expose rather than a primary personal one.
-
 Enter the URL in App Store Connect under **App Information → Privacy Policy
 URL** (it is set per app, not per build).
 
