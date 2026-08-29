@@ -31,8 +31,17 @@ final class LocationManager: NSObject, ObservableObject {
     // flagged for review and precise GPS is engaged. 2 km keeps a safe margin
     // over typical coarse-location error while not escalating (battery) at spots
     // like a golf course ~3 km inside NY, which coarse location already places
-    // firmly in-state. Don't drop below ~1.5 km — inside ~1 km, location error
-    // can flip which side of the border you're on.
+    // firmly in-state.
+    //
+    // 2 km IS A FLOOR, NOT JUST A BATTERY KNOB. Measured 2026-08-29, the bundled
+    // ny_state_boundary.geojson deviates from the Census cartographic boundary
+    // (cb_2023_us_state_500k) by a median of 29 m, p99 1183 m, and a worst case
+    // of 1951 m in the Thousand Islands. Because that maximum sits just inside
+    // this buffer, every location where the polygon is wrong enough to flip a
+    // day's classification is also flagged `nearBorder` and escalated — boundary
+    // error can never silently produce a confident wrong answer. Lowering this
+    // below ~2 km forfeits that guarantee; raising it only costs battery.
+    // Re-measure before changing it, or before replacing the boundary file.
     private let borderBufferMeters: Double = 2_000
     private let minGeofenceRadius: Double = 200
     private let maxGeofenceRadius: Double = 50_000      // 50 km cap (iOS practical limit ~ few hundred km)

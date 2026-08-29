@@ -44,9 +44,15 @@ should back-fill from the other trails and the app's nightly-residence log.
 
 ## Accuracy limitations
 
-- The bundled boundary polygon is medium-resolution; near-border days can be
-  ambiguous. Use the `nearBorder` flags, manual day overrides, and replace the
-  polygon with the authoritative TIGER/Line boundary for audit use.
+- The bundled boundary polygon was **measured against the authoritative Census
+  boundary on 2026-08-29** and tracks it to a median of 29 m, p99 1183 m, worst
+  case 1951 m. Every one of those deviations falls inside the app's 2 km
+  near-border buffer, so a day the polygon could misclassify is always also
+  flagged `nearBorder`. It does not need replacing for audit use. See
+  `scripts/fetch_ny_boundary.md` for the measurement and the one case
+  (open water on the Great Lakes) where a different file would behave
+  differently. Near-border days can still be ambiguous for the reason below —
+  use the `nearBorder` flags and manual day overrides.
 - GPS itself has error (meters to tens of meters); the stored accuracy value and
   raw points let you and your advisor judge each ambiguous day.
 
