@@ -2,17 +2,35 @@ import SwiftUI
 import SwiftData
 
 struct RootTabView: View {
+    @State private var selection: Int = RootTabView.initialSelection
+
     var body: some View {
-        TabView {
+        TabView(selection: $selection) {
             YearSummaryView()
                 .tabItem { Label("Days", systemImage: "calendar") }
+                .tag(0)
 
             DomicileReadinessView()
                 .tabItem { Label("Domicile", systemImage: "checklist") }
+                .tag(1)
 
             ExportView()
                 .tabItem { Label("Export", systemImage: "square.and.arrow.up") }
+                .tag(2)
         }
+    }
+
+    /// Normally the Days tab. In Debug, `-DOONYScreenshotTab <0|1|2>` opens
+    /// straight to a tab so screenshot capture can be scripted without taps.
+    private static var initialSelection: Int {
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        if let i = args.firstIndex(of: "-DOONYScreenshotTab"),
+           i + 1 < args.count, let tab = Int(args[i + 1]), (0...2).contains(tab) {
+            return tab
+        }
+        #endif
+        return 0
     }
 }
 

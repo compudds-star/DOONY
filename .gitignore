@@ -25,3 +25,6 @@ DOONY.xcodeproj/
 *.mobileprovision
 *.p12
 *.certSigningRequest
+
+# Screenshot output from scripts/capture_screenshots.sh
+screenshots/
