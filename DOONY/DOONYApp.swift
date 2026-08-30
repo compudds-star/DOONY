@@ -31,6 +31,12 @@ struct DOONYApp: App {
 
         DOONYApp.applyStoreProtection(storeURL: storeURL)
 
+        // Screenshot fixtures. Compiled out of Release entirely, and inert in
+        // Debug unless launched with -DOONYSeedDemoData.
+        #if DEBUG
+        DemoDataSeeder.seedIfRequested(container: modelContainer)
+        #endif
+
         // Use the LOCAL `modelContainer` (not the stored `container` property) here:
         // StateObject takes an @autoclosure, and referencing a stored property
         // inside it would capture the still-initializing `self`.

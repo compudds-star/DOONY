@@ -2,17 +2,66 @@ import SwiftUI
 import SwiftData
 
 struct RootTabView: View {
+    @State private var selection: Int = RootTabView.initialSelection
+
     var body: some View {
-        TabView {
-            YearSummaryView()
+        TabView(selection: $selection) {
+            daysTab
                 .tabItem { Label("Days", systemImage: "calendar") }
+                .tag(0)
 
             DomicileReadinessView()
                 .tabItem { Label("Domicile", systemImage: "checklist") }
+                .tag(1)
 
             ExportView()
                 .tabItem { Label("Export", systemImage: "square.and.arrow.up") }
+                .tag(2)
         }
+    }
+
+    /// Normally the year summary. In Debug, `-DOONYScreenshotScreen heatmap|day`
+    /// opens a screen that otherwise sits behind navigation, so screenshot
+    /// capture can be scripted without simulating taps.
+    @ViewBuilder private var daysTab: some View {
+        #if DEBUG
+        switch RootTabView.screenshotScreen {
+        case "heatmap":
+            NavigationStack {
+                CalendarHeatmapView(year: NYCalendar.calendar.component(.year, from: .now))
+            }
+        case "day":
+            NavigationStack {
+                DayDetailView(dayKey: DemoDataSeeder.screenshotDayKey)
+            }
+        default:
+            YearSummaryView()
+        }
+        #else
+        YearSummaryView()
+        #endif
+    }
+
+    #if DEBUG
+    private static var screenshotScreen: String {
+        let args = ProcessInfo.processInfo.arguments
+        guard let i = args.firstIndex(of: "-DOONYScreenshotScreen"), i + 1 < args.count
+        else { return "" }
+        return args[i + 1]
+    }
+    #endif
+
+    /// Normally the Days tab. In Debug, `-DOONYScreenshotTab <0|1|2>` opens
+    /// straight to a tab so screenshot capture can be scripted without taps.
+    private static var initialSelection: Int {
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        if let i = args.firstIndex(of: "-DOONYScreenshotTab"),
+           i + 1 < args.count, let tab = Int(args[i + 1]), (0...2).contains(tab) {
+            return tab
+        }
+        #endif
+        return 0
     }
 }
 

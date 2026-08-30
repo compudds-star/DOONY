@@ -2,27 +2,33 @@
 
 Paste everything below the line into App Store Connect → your build → **App
 Review Information → Notes**. It is plain text on purpose: that field does not
-render Markdown. 3677 characters against a 4000 limit.
+render Markdown.
 
 Reusable across submissions.
+
+> **History:** an earlier draft of this file was written for unlisted
+> distribution and described the app as built for a single household with "no
+> value to a general audience." That framing is fine for an unlisted request and
+> actively harmful for a public listing — it argues the reviewer's case for a
+> Guideline 4.2 rejection. It has been rewritten for public paid distribution.
+> Do not reintroduce it.
 
 ---
 
 WHAT THIS APP IS
 
-DOONY is a personal record-keeping tool for one narrow situation: someone who
-has moved their domicile from New York to Florida and needs to document, for a
-possible New York State tax-residency audit, how many days of the year they
-were physically present in New York. NY taxes someone as a statutory resident
-if they keep a home in NY and spend more than 183 days there, counting any part
-of a day as a full day. DOONY maintains that count, plus a checklist of
-domicile evidence.
+DOONY is a record-keeping tool for New York State's statutory-residence rule.
+New York taxes a person as a resident if they keep a home in the state and are
+physically present there for more than 183 days in a year, counting any part of
+a day as a full day. Anyone who keeps a home in New York while claiming domicile
+elsewhere — a large and well-defined group, particularly people who have
+relocated to Florida — has to be able to document that day count if audited.
 
-WHY UNLISTED DISTRIBUTION
+DOONY maintains the count automatically from on-device location, and organizes
+the qualitative domicile evidence an auditor weighs alongside it. The audience
+is anyone in that situation and the accountants who advise them.
 
-The audience is a single household, and the app is specific to one state's
-residency test. It has no value to a general audience, which is why we
-requested unlisted distribution.
+It is a one-time paid purchase. No subscriptions, no in-app purchases, no ads.
 
 ACCOUNTS
 
