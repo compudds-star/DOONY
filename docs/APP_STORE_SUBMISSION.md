@@ -1,159 +1,160 @@
-# App Store submission checklist — DOONY (unlisted)
+# App Store submission checklist — DOONY
+
+**Distribution: public, paid, one-time purchase.** Family members get it free
+via promo code or Family Sharing. Unlisted distribution was considered and
+dropped — it required the same support URL, screenshots, description, privacy
+policy and age rating as a public listing, so it bought nothing but
+non-discoverability while adding a second Apple review that could be declined.
 
 App Store Connect Apple ID: **6806615033** · Bundle ID: `com.doony.app` ·
 Team: `24Q366W5BQ`
 
-Companion files: [`APP_REVIEW_NOTES.md`](APP_REVIEW_NOTES.md) (paste into App
-Review Information → Notes) and [`PRIVACY.md`](PRIVACY.md) (the policy that
-needs a public URL).
+Companion file: [`APP_REVIEW_NOTES.md`](APP_REVIEW_NOTES.md) — paste into App
+Review Information → Notes.
 
 ---
 
-## 1. Privacy policy URL
+## 1. The two required URLs
 
-Required for every app, including ones that collect nothing. It must be a
-**public** URL that Apple can load without signing in.
+Both are served from this repo by GitHub Pages (`main` branch, `/docs` folder):
 
-**This is served from this repo via GitHub Pages:**
+| Field | URL |
+|---|---|
+| Privacy Policy URL | https://compudds-star.github.io/DOONY/ |
+| Support URL | https://compudds-star.github.io/DOONY/support.html |
 
-> ## https://compudds-star.github.io/DOONY/
+Sources are `docs/index.html` and `docs/support.html`; `docs/.nojekyll` makes
+Pages serve them as-is. `docs/PRIVACY.md` is the policy text in Markdown.
 
-`docs/index.html` is the page; `docs/.nojekyll` tells Pages to serve it as-is
-rather than running it through Jekyll. `docs/PRIVACY.md` is the same text in
-Markdown, kept alongside it as the reviewable source.
-
-To (re-)enable Pages after a fresh clone or if it gets switched off:
-**Settings → Pages → Source: Deploy from a branch → `main` / `/docs`**, or
+To (re-)enable Pages: **Settings → Pages → Deploy from a branch → `main` /
+`/docs`**, or
 
 ```bash
 gh api -X POST repos/compudds-star/DOONY/pages \
   -f 'source[branch]=main' -f 'source[path]=/docs'
 ```
 
-Pages serves from `main`, so a change to the policy is only live once it is
-merged there — editing it on a feature branch changes nothing publicly.
+Pages serves from `main` — edits on a feature branch change nothing publicly
+until merged.
 
-Enter the URL in App Store Connect under **App Information → Privacy Policy
-URL** (it is set per app, not per build).
+Both go in App Store Connect under **App Information** (set per app, not per
+build).
 
-## 2. App Privacy questionnaire → "Data Not Collected"
+## 2. Paid app setup — start this first, it gates everything
 
-**App Store Connect → your app → App Privacy → Data Collection → Edit.**
+A paid app cannot be sold until **Agreements, Tax, and Banking** is complete.
+This is the longest-lead item here: bank verification and tax forms can take
+days, and the app cannot go on sale without them, however ready the binary is.
 
-Answer the first question — *"Do you or your third-party partners collect any
-data from this app?"* — with **No**. That is the whole questionnaire; answering
-No ends it. Then **Publish**.
+**App Store Connect → Business** (or Agreements, Tax, and Banking):
+
+1. **Sign the Paid Applications Agreement.** The free agreement you already have
+   does not cover paid apps.
+2. **Add a bank account** for payouts.
+3. **Complete the tax forms** — a W-9 for a US developer.
+
+Then **Pricing and Availability**:
+
+- Set the price. Apple's price points are not exactly $5.00 — pick the tier
+  nearest to it (typically $4.99).
+- Consider limiting availability to the **United States** storefront. The app is
+  specific to New York State law; selling it in 175 countries invites confused
+  buyers and bad reviews for no gain.
+- **Enable Family Sharing** if you want family members to get it from your own
+  purchase rather than via codes.
+
+Also worth doing: enroll in the **App Store Small Business Program**. It drops
+Apple's commission from 30% to 15% for developers under $1M/year. Free, and
+takes a few minutes.
+
+## 3. Getting it to family for free
+
+Two options; the second is less hassle if everyone is in one Family group.
+
+**Promo codes** — App Store Connect → your app → Promo Codes. **100 per
+version.** Each code is single-use and **must be redeemed within 4 weeks** of
+being generated. That deadline is only on redemption: once redeemed the app is a
+normal purchase, permanent, and updates forever. This is what finally solves the
+TestFlight 90-day expiry problem that started this whole exercise.
+
+One quirk: someone who installs via promo code cannot rate or review the app.
+
+**Family Sharing** — enable it in Pricing and Availability, buy the app once
+yourself, and up to five family members get it free with no codes and no expiry.
+Simplest option if it fits.
+
+## 4. App Privacy questionnaire → "Data Not Collected"
+
+**App Store Connect → App Privacy → Data Collection → Edit.**
+
+Answer *"Do you or your third-party partners collect any data from this app?"*
+with **No**. That ends the questionnaire. Then **Publish**.
 
 **Why "No" is correct even though the app handles location and documents.**
 Apple defines "collect" as transmitting data off the device in a way that makes
 it available to you or your partners beyond servicing the immediate request.
-Data that is processed and stored **only on the device** is explicitly not
-collected. DOONY has no networking code at all — verified: zero networking
-symbols in the source, and no networking framework among its imports. So
-location, dossier entries, and attachments are all handled but none are
-collected.
+Data processed and stored **only on the device** is explicitly not collected.
+DOONY has no networking code at all — verified: zero networking symbols in the
+source, and no networking framework among its imports.
 
-The user-initiated share-sheet export is also not collection: you are moving
-your own data yourself, and the developer never receives it.
+The user-initiated share-sheet export is also not collection: the user moves
+their own data, and the developer never receives it.
 
 ⚠️ **This answer becomes false the moment the app gains analytics, crash
-reporting, or any cloud sync.** Revisit it if that ever changes.
+reporting, or any cloud sync.**
 
-## 3. Age rating
+## 5. Age rating → 4+
 
-**App Store Connect → App Information → Age Rating → Edit.**
-
-Every content question is **None** / **No**: no violence, sexual content,
-profanity, alcohol/tobacco/drugs, gambling, contests, horror, or mature themes.
-
-Watch the non-obvious ones:
+**App Information → Age Rating → Edit.** Every content question is **None** /
+**No**. Watch the non-obvious ones:
 
 | Question | Answer | Why |
 |---|---|---|
-| Unrestricted web access | **No** | No `WKWebView` or `SFSafariViewController` anywhere in the app |
-| In-app purchases | **No** | None |
+| Unrestricted web access | **No** | No `WKWebView` or `SFSafariViewController` in the app |
+| In-app purchases | **No** | One-time purchase only |
 | Advertising | **No** | None |
 | User-generated content / messaging | **No** | Single-user, no sharing between users |
 | Medical or treatment information | **No** | Tax record-keeping, not health |
-| Gambling or contests | **No** | — |
 
-Expected result: **4+**.
+Apple expanded the rating tiers in 2025 (adding 13+, 16+, 18+), so the
+questionnaire may look unfamiliar. The answers above still resolve to **4+**.
 
-Note that Apple expanded the rating tiers in 2025 (adding 13+, 16+, 18+), so the
-questionnaire may look unfamiliar if you last did this a while ago. The answers
-above are unaffected — everything still resolves to 4+.
+## 6. Everything else
 
-## 4. Unlisted distribution request
-
-The form is at:
-
-> ## https://developer.apple.com/contact/request/unlisted-app/
-
-It is behind Apple ID sign-in — the link redirects to Apple's login before it
-shows you anything, so sign in to your developer account first. Background
-reading: https://developer.apple.com/support/unlisted-app-distribution/
-
-⚠️ **Order matters. Submit the build to App Review BEFORE submitting this
-request.** Apple declines unlisted requests for apps that have not been
-submitted to App Review, or that are in a beta/prerelease state. The app must
-either already be on the App Store or be submitted and awaiting review. You do
-*not* need to release it publicly — being in review is enough, which is the
-point, since a public release is the thing you are avoiding.
-
-Apple also asks that you **say so in the Review Notes** of the submission itself.
-`APP_REVIEW_NOTES.md` already carries a "WHY UNLISTED DISTRIBUTION" section, so
-pasting it satisfies this.
-
-Approval is a manual Apple review of the *request*, separate from App Review of
-the build. Expect a few days.
-
-Apple recommends apps distributed this way include some mechanism preventing
-unauthorized use, in case the link spreads. For a two-person app holding only
-on-device data that is arguably moot, but it is worth knowing they suggest it.
-
-Have ready: the app name, the Apple ID above, your contact details, and a
-justification. Draft justification:
-
-> DOONY is a personal record-keeping app built for a single household. Using
-> on-device background location, it tracks whether each calendar day was spent
-> inside or outside New York State — the day-count evidence a New York State
-> tax-residency audit turns on — and organizes the supporting domicile
-> documentation alongside it.
->
-> The app is specific to one U.S. state's residency test and is shaped around
-> one family's circumstances. It has no value to a general App Store audience,
-> and we do not want it discoverable through search or browse. Unlisted
-> distribution matches its actual audience: a link shared with the two people
-> who use it and their accountant.
->
-> The app collects no data, makes no network requests, and contains no
-> third-party SDKs. All records remain on the device.
-
-Adapt the wording to whatever fields the form actually presents, and change "we"
-to "I" if you prefer — see the same note in `APP_REVIEW_NOTES.md`.
-
-## 5. Everything else the submission needs
-
-- **Screenshots** — required even for unlisted. 6.7" iPhone at minimum.
-- **Description, keywords, support URL** — keywords matter little when the app
-  is not searchable, but the fields are still required.
-- **Export compliance** — already handled in the binary:
+- **Screenshots** — 6.9" iPhone, 1320 × 2868, between 1 and 10. No iPad set is
+  needed because the app ships iPhone-only. Capture from the iPhone 17 Pro Max
+  simulator with `xcrun simctl io booted screenshot`, which writes at exactly
+  that size. Use seeded demo data, never your own records — real screenshots
+  would publish your actual day count and addresses to a public listing.
+- **Description and keywords** — now they matter, since the app is
+  discoverable. Write for someone searching "New York residency days" or
+  "183 day rule", not for someone who already knows what DOONY is.
+- **Export compliance** — already handled:
   `ITSAppUsesNonExemptEncryption` is `false` in `Info.plist`, so no per-build
   prompt.
-- **Privacy manifest** — not required. The app uses no required-reason APIs and
-  bundles no third-party SDKs. Nothing to add.
-- **App Review notes** — paste `APP_REVIEW_NOTES.md`; the Always-location
-  justification there is the part most likely to decide the review.
+- **Privacy manifest** — not required. No required-reason APIs, no third-party
+  SDKs.
+
+## 7. The two review risks
+
+- **Guideline 5.1.1 — background location.** The single most likely cause of a
+  round trip. The justification in `APP_REVIEW_NOTES.md` is written for exactly
+  this. Do not submit without pasting it.
+- **Guideline 4.2 — minimum functionality.** Lower than it would have been for
+  an obviously personal app, because DOONY is substantial and addresses a real
+  market. Keep the framing on the general audience: people who keep a home in
+  New York while claiming domicile elsewhere. Never describe it as built for
+  your family — that invites the rejection.
 
 ## Order of operations
 
-1. Publish the privacy policy (Pages, from `main` — see step 1).
-2. Enter that URL, the age rating, and the App Privacy answer in App Store
-   Connect.
-3. Add screenshots and description; attach the processed build.
-4. Paste the App Review notes, including the unlisted-distribution section.
-5. **Submit the build for review.**
-6. **Then** submit the unlisted-distribution request.
-
-The order of 5 and 6 is not interchangeable: a request filed before the build is
-in review gets declined.
+1. **Start Agreements, Tax, and Banking now.** It gates everything and is the
+   slowest step.
+2. Merge to `main` and enable Pages; confirm both URLs load.
+3. Enter the URLs, age rating, and App Privacy answer in App Store Connect.
+4. Set price, availability, and Family Sharing.
+5. Capture screenshots from seeded demo data; write the description.
+6. Attach the processed build and paste the App Review notes.
+7. Submit for review.
+8. On approval, generate promo codes (they expire 4 weeks after generation, so
+   do this when you are ready to hand them out, not before).

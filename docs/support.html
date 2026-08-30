@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DOONY — Support</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { max-width: 42rem; margin: 0 auto; padding: 2.5rem 1.25rem 4rem;
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    color: #1c1c1e; background: #fff; }
+  h1 { font-size: 1.75rem; margin: 0 0 .25rem; letter-spacing: -.02em; }
+  h2 { font-size: 1.15rem; margin: 2.25rem 0 .5rem; letter-spacing: -.01em; }
+  .sub { color: #6b6b70; font-size: .95rem; margin: 0 0 2rem; }
+  ul { padding-left: 1.25rem; } li { margin: .4rem 0; }
+  code { font: .9em ui-monospace, SFMono-Regular, Menlo, monospace;
+         background: #f2f2f4; padding: .1em .35em; border-radius: 3px; }
+  a { color: #0b62d0; }
+  .box { border: 1px solid #e4e4e7; border-radius: 8px; padding: 1rem 1.25rem; margin: 1.5rem 0; }
+  footer { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid #e4e4e7;
+           color: #6b6b70; font-size: .9rem; }
+  @media (prefers-color-scheme: dark) {
+    body { color: #e8e8ea; background: #131315; }
+    .sub, footer { color: #9a9aa0; } code { background: #26262a; }
+    a { color: #6fa8f5; } .box, footer { border-color: #2c2c31; }
+  }
+</style>
+</head>
+<body>
+
+<h1>DOONY — Support</h1>
+<p class="sub">Day tracking for New York's 183-day statutory-residence test.</p>
+
+<div class="box">
+  <strong>Contact:</strong>
+  <a href="mailto:compudds@gmail.com">compudds@gmail.com</a><br>
+  Questions, bug reports, and feature requests all welcome here.
+</div>
+
+<h2>Getting started</h2>
+<ul>
+  <li>On first launch, DOONY asks for location access. Choose
+  <strong>Allow While Using App</strong>, then <strong>Change to Always
+  Allow</strong> when iOS follows up.</li>
+  <li><strong>Always</strong> access is what makes the day count complete. With
+  "While Using", days you don't open the app are recorded as Unverified.</li>
+  <li>Enable <strong>Precise Location</strong>. Approximate location is not
+  accurate enough near a state border.</li>
+</ul>
+
+<h2>Common questions</h2>
+
+<p><strong>A day shows as "Unverified."</strong> No location fix was recorded
+that day — usually the phone was off, in Airplane Mode, or location access was
+switched off. DOONY never guesses. Open the day and use Manual override to set
+it yourself, backing it up with your own records.</p>
+
+<p><strong>A day near the state line looks wrong.</strong> Days recorded within
+about 2 km of the border are flagged as near-border and captured with
+high-accuracy GPS. If one is still wrong, open the day, check the raw samples,
+and use Manual override.</p>
+
+<p><strong>Does my data go anywhere?</strong> No. DOONY makes no network
+requests at all. Everything stays on your iPhone, encrypted at rest. See the
+<a href="./">privacy policy</a>. The only way data leaves the device is an
+export you start yourself from the Export tab.</p>
+
+<p><strong>How do I get my records out?</strong> The Export tab produces CSV
+files and a PDF report, handed to the iOS share sheet so you can mail them to
+your accountant or save them to Files.</p>
+
+<p><strong>Will it drain my battery?</strong> It shouldn't. DOONY relies on
+low-power significant-location-change monitoring and a single geofence, and only
+turns on high-accuracy GPS within about 2 km of the New York border.</p>
+
+<p><strong>What happens if I delete the app?</strong> All of its data is deleted
+with it, permanently. There is no cloud backup, so export anything you need
+first.</p>
+
+<h2>Important</h2>
+<p>DOONY is a record-keeping aid. It is <strong>not legal or tax advice</strong>,
+and it is not proof of residency or domicile. A GPS log is one corroborating
+source among several an auditor will weigh. Decisions about your residency
+belong with your accountant or attorney.</p>
+
+<footer>
+  <a href="./">Privacy policy</a> · DOONY for iPhone
+</footer>
+
+</body>
+</html>
