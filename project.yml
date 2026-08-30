@@ -54,3 +54,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.doony.app.tests
+        # The test bundle needs its own Info.plist to code sign. The app target
+        # deliberately uses a hand-maintained one (GENERATE_INFOPLIST_FILE: NO);
+        # the tests have nothing to maintain, so let Xcode generate it.
+        GENERATE_INFOPLIST_FILE: YES
