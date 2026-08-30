@@ -68,6 +68,22 @@ final class BackupArchiveTests: XCTestCase {
                 "voters": n(VoterRegistration.self), "nights": n(ResidenceNight.self)]
     }
 
+    private var scratch: [URL] = []
+
+    override func tearDownWithError() throws {
+        for u in scratch { try? FileManager.default.removeItem(at: u) }
+        scratch = []
+    }
+
+    /// Export to a throwaway file, the way the app does.
+    private func exportToFile(store: AttachmentStore? = nil) throws -> URL {
+        let url = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString + ".doonybackup")
+        scratch.append(url)
+        try BackupArchive.export(context: context, store: store, to: url)
+        return url
+    }
+
     private func freshContext() throws {
         container = try ModelContainer(
             for: Self.schema,
@@ -80,13 +96,13 @@ final class BackupArchiveTests: XCTestCase {
     func testRoundTripIntoAnEmptyStoreRestoresEverything() throws {
         seed()
         let before = counts()
-        let data = try BackupArchive.export(context: context, store: nil, includeDocuments: false)
+        let file = try exportToFile()
 
         // Simulate delete-and-reinstall: a brand new, empty store.
         try freshContext()
         XCTAssertEqual(counts()["days"], 0, "precondition: the new store starts empty")
 
-        let summary = try BackupArchive.restore(from: data, context: context, store: nil)
+        let summary = try BackupArchive.restore(from: file, context: context, store: nil)
         XCTAssertEqual(counts(), before, "restore must reproduce the original store exactly")
         XCTAssertEqual(summary.days, 3)
         XCTAssertEqual(summary.samples, 2)
@@ -95,9 +111,9 @@ final class BackupArchiveTests: XCTestCase {
 
     func testFieldsSurviveTheRoundTrip() throws {
         seed()
-        let data = try BackupArchive.export(context: context, store: nil, includeDocuments: false)
+        let file = try exportToFile()
         try freshContext()
-        _ = try BackupArchive.restore(from: data, context: context, store: nil)
+        _ = try BackupArchive.restore(from: file, context: context, store: nil)
 
         let days = try context.fetch(FetchDescriptor<DayClassification>(
             predicate: #Predicate { $0.dayKey == "2026-07-04" }))
@@ -123,25 +139,25 @@ final class BackupArchiveTests: XCTestCase {
 
     func testRestoringTwiceDoesNotDuplicate() throws {
         seed()
-        let data = try BackupArchive.export(context: context, store: nil, includeDocuments: false)
+        let file = try exportToFile()
         try freshContext()
 
-        _ = try BackupArchive.restore(from: data, context: context, store: nil)
+        _ = try BackupArchive.restore(from: file, context: context, store: nil)
         let afterFirst = counts()
-        _ = try BackupArchive.restore(from: data, context: context, store: nil)
+        _ = try BackupArchive.restore(from: file, context: context, store: nil)
         XCTAssertEqual(counts(), afterFirst, "restore must be idempotent")
     }
 
     func testRestoreMergesWithoutDestroyingExistingData() throws {
         seed()
-        let data = try BackupArchive.export(context: context, store: nil, includeDocuments: false)
+        let file = try exportToFile()
 
         try freshContext()
         // A day the backup does not know about must survive the restore.
         context.insert(DayClassification(dayKey: "2026-12-25", status: .ny, sampleCount: 2))
         try context.save()
 
-        _ = try BackupArchive.restore(from: data, context: context, store: nil)
+        _ = try BackupArchive.restore(from: file, context: context, store: nil)
         let kept = try context.fetch(FetchDescriptor<DayClassification>(
             predicate: #Predicate { $0.dayKey == "2026-12-25" }))
         XCTAssertEqual(kept.count, 1, "restore must merge, not wipe")
@@ -149,28 +165,103 @@ final class BackupArchiveTests: XCTestCase {
     }
 
     func testRejectsFilesThatAreNotBackups() throws {
-        let notABackup = Data(#"{"hello":"world"}"#.utf8)
-        XCTAssertThrowsError(try BackupArchive.restore(from: notABackup, context: context, store: nil))
-
-        let garbage = Data("this is not json at all".utf8)
-        XCTAssertThrowsError(try BackupArchive.restore(from: garbage, context: context, store: nil))
+        func write(_ bytes: Data) -> URL {
+            let u = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+            scratch.append(u); try? bytes.write(to: u); return u
+        }
+        XCTAssertThrowsError(try BackupArchive.restore(
+            from: write(Data(#"{"hello":"world"}"#.utf8)), context: context, store: nil))
+        XCTAssertThrowsError(try BackupArchive.restore(
+            from: write(Data("this is not json at all".utf8)), context: context, store: nil))
+        // Right magic, truncated before the manifest.
+        XCTAssertThrowsError(try BackupArchive.restore(
+            from: write(Data("DOONYBAK".utf8)), context: context, store: nil))
     }
 
-    func testDataOnlyBackupReportsSkippedDocuments() throws {
-        // An advisor carrying an attachment, backed up without documents.
+    /// Backups written by format 1 — a single JSON file with base64 payloads —
+    /// must keep restoring. People may already hold one.
+    func testFormatOneJSONBackupsStillRestore() throws {
+        let legacy = """
+        {
+          "format": "doony.backup",
+          "version": 1,
+          "exportedAt": "2026-08-29T12:00:00Z",
+          "includesDocuments": false,
+          "days": [
+            {"dayKey": "2026-03-01", "status": "ny", "sampleCount": 4,
+             "hasBorderAmbiguity": false, "manualOverride": true,
+             "note": "legacy", "lastComputed": "2026-03-01T12:00:00Z"}
+          ],
+          "samples": [], "advisors": [], "vehicles": [], "licenses": [],
+          "voterRegistrations": [], "properties": [], "financialTies": [],
+          "nearAndDear": [], "memberships": [], "employment": [],
+          "mailingAddresses": [], "residenceNights": []
+        }
+        """
+        let url = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString + ".json")
+        scratch.append(url)
+        try Data(legacy.utf8).write(to: url)
+
+        let summary = try BackupArchive.restore(from: url, context: context, store: nil)
+        XCTAssertEqual(summary.days, 1)
+        let days = try context.fetch(FetchDescriptor<DayClassification>(
+            predicate: #Predicate { $0.dayKey == "2026-03-01" }))
+        XCTAssertEqual(days.first?.status, .ny)
+        XCTAssertEqual(days.first?.manualOverride, true)
+        XCTAssertEqual(days.first?.note, "legacy")
+    }
+
+    /// The point of the container: document bytes survive byte-for-byte, and a
+    /// large one does not have to be held in memory alongside everything else.
+    func testDocumentsRoundTripThroughTheContainer() throws {
+        guard let store = try? AttachmentStore() else {
+            throw XCTSkip("AttachmentStore needs the Keychain; unavailable in this environment")
+        }
+
+        let small = Data("a deed, notarised".utf8)
+        var big = Data(count: 5 * 1024 * 1024)          // 5 MB
+        big.replaceSubrange(0..<4, with: Data([0xDE, 0xAD, 0xBE, 0xEF]))
+
+        let advisor = Advisor(name: "With paperwork", state: "FL")
+        advisor.attachments = [
+            try store.importAttachment(data: small, displayName: "deed.txt",
+                                       typeIdentifier: "public.plain-text"),
+            try store.importAttachment(data: big, displayName: "scan.bin",
+                                       typeIdentifier: "public.data")
+        ]
+        context.insert(advisor)
+        try context.save()
+
+        let file = try exportToFile(store: store)
+        try freshContext()
+
+        let summary = try BackupArchive.restore(from: file, context: context, store: store)
+        XCTAssertEqual(summary.documents, 2)
+        XCTAssertEqual(summary.documentsSkipped, 0)
+
+        let restored = try context.fetch(FetchDescriptor<Advisor>())
+        XCTAssertEqual(restored.count, 1)
+        let byName = Dictionary(uniqueKeysWithValues:
+            restored[0].attachments.map { ($0.displayName, $0) })
+        XCTAssertEqual(try store.decrypt(XCTUnwrap(byName["deed.txt"])), small)
+        XCTAssertEqual(try store.decrypt(XCTUnwrap(byName["scan.bin"])), big,
+                       "a multi-megabyte document must survive the container byte-for-byte")
+    }
+
+    /// Without an AttachmentStore the bytes cannot be re-encrypted, and that has
+    /// to be reported rather than silently losing the document.
+    func testMissingStoreReportsSkippedDocuments() throws {
         let a = Advisor(name: "With paperwork", state: "FL")
         a.attachments = [Attachment(encryptedFilename: "x.enc", displayName: "deed.pdf",
                                     typeIdentifier: "com.adobe.pdf", byteCount: 1024)]
         context.insert(a)
         try context.save()
 
-        let data = try BackupArchive.export(context: context, store: nil, includeDocuments: false)
+        let file = try exportToFile(store: nil)
         try freshContext()
-        let summary = try BackupArchive.restore(from: data, context: context, store: nil)
-
+        let summary = try BackupArchive.restore(from: file, context: context, store: nil)
         XCTAssertEqual(summary.documents, 0)
-        XCTAssertEqual(summary.documentsSkipped, 1,
-                       "a document that could not be carried must be reported, not dropped silently")
+        XCTAssertEqual(summary.documentsSkipped, 1)
         XCTAssertTrue(summary.localizedDescription.contains("not restored"))
     }
 }

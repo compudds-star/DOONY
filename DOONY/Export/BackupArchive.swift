@@ -4,32 +4,57 @@ import SwiftData
 /// Full-fidelity backup and restore.
 ///
 /// The CSV/PDF exports are *reports* — built for a CPA to read, and impossible
-/// to load back in. This is the other thing: a complete machine-readable copy of
-/// the store that `restore` can put back, so deleting and reinstalling the app
-/// does not destroy a year of day counts.
+/// to load back in. This is the other thing: a complete copy of the store that
+/// `restore` can put back, so deleting and reinstalling the app does not destroy
+/// a year of day counts.
 ///
-/// Everything happens on-device. The resulting file leaves only through the
-/// share sheet the user picks, exactly like the other exports.
+/// Everything happens on-device. The file leaves only through the share sheet
+/// the user picks, exactly like the other exports.
 ///
-/// ## The file
+/// ## Why a container rather than one JSON file
 ///
-/// JSON, one object, `format: "doony.backup"` plus an integer `version` so a
-/// future format change can be detected rather than silently mis-parsed.
+/// Format 1 inlined attachment bytes into the JSON as base64. That works for a
+/// small dossier and falls over for a real one: the whole archive had to exist
+/// in memory before encoding, base64 adds a third again on top, and iOS kills
+/// the app rather than let it finish. It also forced a user-facing choice
+/// between a backup that was complete and one that was safe to make — a choice
+/// nobody should have to get right the night before wiping their phone.
 ///
-/// Attachment *metadata* is always included. Attachment *bytes* are included
-/// only when exporting with documents, because they dominate the file size —
-/// a plain backup is kilobytes, one with documents is as large as the documents.
+/// Format 2 writes a small JSON manifest followed by the document bytes
+/// verbatim, streamed one file at a time in both directions. Peak memory is one
+/// document regardless of dossier size, and the file is smaller than the base64
+/// it replaces. There is one backup, and it always contains everything.
+///
+/// ```
+/// "DOONYBAK"                 8-byte magic
+/// UInt32                     format version
+/// UInt64 + bytes             manifest JSON
+/// repeated to end of file:
+///   UInt64 + bytes           attachment id (UUID string)
+///   UInt64 + bytes           document, decrypted
+/// ```
+///
+/// Integers are little-endian. Documents are stored decrypted, because the blobs
+/// are sealed under a Keychain key marked `ThisDeviceOnly` that by design cannot
+/// travel; they are re-encrypted under the destination device's own key on
+/// restore. The backup file is therefore as sensitive as the documents in it —
+/// the same as the existing CSV and PDF exports.
+///
+/// `restore` still reads format 1 files, so backups taken before this change
+/// keep working.
 ///
 /// ## Restore is a merge, not a wipe
 ///
-/// Records are matched on their identity (`dayKey` for days, `id` for
-/// everything else) and updated in place; anything unknown is inserted.
-/// Restoring the same file twice changes nothing the second time, and restoring
-/// into a store that already has data does not destroy it.
+/// Records are matched on identity (`dayKey` for days, `id` for everything
+/// else) and updated in place; anything unknown is inserted. Restoring the same
+/// file twice changes nothing the second time, and restoring into a store that
+/// already has data does not destroy it.
 enum BackupArchive {
 
     static let formatTag = "doony.backup"
-    static let currentVersion = 1
+    static let currentVersion = 2
+    /// Format 1: single JSON file with base64 payloads inline.
+    static let legacyJSONVersion = 1
 
     enum Failure: LocalizedError {
         case notABackup
@@ -70,10 +95,10 @@ enum BackupArchive {
         var createdAt: Date
         var retainedImageMetadata: Bool
         var byteCount: Int
-        /// Plaintext bytes, present only in a with-documents backup. The blob on
-        /// disk is device-encrypted with a key that never leaves the device, so
-        /// it cannot be copied across as-is — it is decrypted here and
-        /// re-encrypted under the destination device's own key on restore.
+        /// True when the container carries this attachment's bytes (format 2).
+        var hasDocument: Bool?
+        /// Format 1 only: bytes inlined as base64. Never written any more, still
+        /// read so old backups restore.
         var payload: Data?
     }
 
@@ -174,25 +199,29 @@ enum BackupArchive {
 
     // MARK: - Export
 
+    /// Writes a backup to `url`. Documents are appended after the manifest and
+    /// streamed one at a time, so peak memory is a single document however large
+    /// the dossier is.
     @MainActor
     static func export(context: ModelContext,
                        store: AttachmentStore?,
-                       includeDocuments: Bool) throws -> Data {
+                       to url: URL) throws {
+        var documents: [(id: String, attachment: Attachment)] = []
 
         func all<T: PersistentModel>(_ type: T.Type) -> [T] {
             (try? context.fetch(FetchDescriptor<T>())) ?? []
         }
 
+        // The manifest holds no bytes — each attachment is only noted here and
+        // its contents appended to the container afterwards.
         func pack(_ list: [Attachment]) -> [AttachmentDTO] {
             list.map { a in
-                var payload: Data?
-                if includeDocuments, let store {
-                    payload = try? store.decrypt(a)
-                }
+                let carried = store != nil
+                if carried { documents.append((a.id.uuidString, a)) }
                 return AttachmentDTO(id: a.id, displayName: a.displayName,
                                      typeIdentifier: a.typeIdentifier, createdAt: a.createdAt,
                                      retainedImageMetadata: a.retainedImageMetadata,
-                                     byteCount: a.byteCount, payload: payload)
+                                     byteCount: a.byteCount, hasDocument: carried, payload: nil)
             }
         }
 
@@ -200,7 +229,7 @@ enum BackupArchive {
             format: formatTag,
             version: currentVersion,
             exportedAt: .now,
-            includesDocuments: includeDocuments,
+            includesDocuments: store != nil,
             days: all(DayClassification.self).map {
                 DayDTO(dayKey: $0.dayKey, status: $0.statusRaw, sampleCount: $0.sampleCount,
                        hasBorderAmbiguity: $0.hasBorderAmbiguity, manualOverride: $0.manualOverride,
@@ -275,23 +304,120 @@ enum BackupArchive {
                          state: $0.state, notes: $0.notes)
             })
 
-        return try encoder.encode(archive)
+        let manifest = try encoder.encode(archive)
+
+        FileManager.default.createFile(atPath: url.path, contents: nil)
+        let out = try FileHandle(forWritingTo: url)
+        defer { try? out.close() }
+
+        try out.write(contentsOf: Container.magic)
+        try out.write(contentsOf: Container.u32(UInt32(currentVersion)))
+        try out.write(contentsOf: Container.u64(UInt64(manifest.count)))
+        try out.write(contentsOf: manifest)
+
+        for doc in documents {
+            // One document in memory at a time, then released.
+            guard let store, let bytes = try? store.decrypt(doc.attachment) else { continue }
+            let id = Data(doc.id.utf8)
+            try out.write(contentsOf: Container.u64(UInt64(id.count)))
+            try out.write(contentsOf: id)
+            try out.write(contentsOf: Container.u64(UInt64(bytes.count)))
+            try out.write(contentsOf: bytes)
+        }
+    }
+
+    // MARK: - Container
+
+    /// Length-prefixed records. Deliberately boring: the reader must be able to
+    /// walk a large file without holding it in memory, which rules out JSON.
+    private enum Container {
+        static let magic = Data("DOONYBAK".utf8)
+
+        static func u32(_ v: UInt32) -> Data { withUnsafeBytes(of: v.littleEndian) { Data($0) } }
+        static func u64(_ v: UInt64) -> Data { withUnsafeBytes(of: v.littleEndian) { Data($0) } }
+
+        static func readU32(_ h: FileHandle) throws -> UInt32? {
+            guard let d = try h.read(upToCount: 4), d.count == 4 else { return nil }
+            return d.withUnsafeBytes { $0.loadUnaligned(as: UInt32.self) }.littleEndian
+        }
+        static func readU64(_ h: FileHandle) throws -> UInt64? {
+            guard let d = try h.read(upToCount: 8), d.count == 8 else { return nil }
+            return d.withUnsafeBytes { $0.loadUnaligned(as: UInt64.self) }.littleEndian
+        }
+
+        /// Offsets of each document's bytes, keyed by attachment id. Walks the
+        /// file skipping over contents rather than reading them.
+        static func index(_ h: FileHandle) throws -> [String: (offset: UInt64, length: UInt64)] {
+            var map: [String: (offset: UInt64, length: UInt64)] = [:]
+            while true {
+                guard let idLen = try readU64(h), idLen > 0, idLen < 1024,
+                      let idData = try h.read(upToCount: Int(idLen)), idData.count == Int(idLen),
+                      let len = try readU64(h) else { return map }
+                let start = try h.offset()
+                map[String(decoding: idData, as: UTF8.self)] = (start, len)
+                try h.seek(toOffset: start + len)
+            }
+        }
     }
 
     // MARK: - Restore
 
+    /// Restores from a backup file. Reads both the current container format and
+    /// the format-1 JSON files written before it, so old backups keep working.
+    @MainActor
+    @discardableResult
+    static func restore(from url: URL,
+                        context: ModelContext,
+                        store: AttachmentStore?) throws -> Summary {
+
+        let handle = try FileHandle(forReadingFrom: url)
+        defer { try? handle.close() }
+
+        guard try handle.read(upToCount: Container.magic.count) == Container.magic else {
+            // Not a container — try it as a format-1 JSON backup.
+            return try restore(from: try Data(contentsOf: url), context: context, store: store)
+        }
+
+        guard let version = try Container.readU32(handle) else { throw Failure.notABackup }
+        guard Int(version) <= currentVersion else {
+            throw Failure.unsupportedVersion(Int(version))
+        }
+        guard let manifestLength = try Container.readU64(handle),
+              let manifest = try handle.read(upToCount: Int(manifestLength)),
+              manifest.count == Int(manifestLength),
+              let archive = try? decoder.decode(Archive.self, from: manifest),
+              archive.format == formatTag else { throw Failure.notABackup }
+
+        // Walk the document records once to learn where each one starts, then
+        // read them individually as they are needed.
+        let offsets = try Container.index(handle)
+
+        return try apply(archive, context: context, store: store) { dto in
+            guard let at = offsets[dto.id.uuidString] else { return nil }
+            guard (try? handle.seek(toOffset: at.offset)) != nil else { return nil }
+            return try? handle.read(upToCount: Int(at.length))
+        }
+    }
+
+    /// Format-1 entry point: the whole backup is one JSON document.
     @MainActor
     @discardableResult
     static func restore(from data: Data,
                         context: ModelContext,
                         store: AttachmentStore?) throws -> Summary {
-
-        guard let probe = try? decoder.decode(Archive.self, from: data),
-              probe.format == formatTag else { throw Failure.notABackup }
-        guard probe.version <= currentVersion else {
-            throw Failure.unsupportedVersion(probe.version)
+        guard let archive = try? decoder.decode(Archive.self, from: data),
+              archive.format == formatTag else { throw Failure.notABackup }
+        guard archive.version <= currentVersion else {
+            throw Failure.unsupportedVersion(archive.version)
         }
-        let archive = probe
+        return try apply(archive, context: context, store: store) { $0.payload }
+    }
+
+    @MainActor
+    private static func apply(_ archive: Archive,
+                              context: ModelContext,
+                              store: AttachmentStore?,
+                              document: (AttachmentDTO) -> Data?) throws -> Summary {
         var summary = Summary()
 
         func existing<T: PersistentModel>(_ type: T.Type) -> [T] {
@@ -304,7 +430,7 @@ enum BackupArchive {
         func unpack(_ dtos: [AttachmentDTO]) -> [Attachment] {
             var out: [Attachment] = []
             for dto in dtos {
-                guard let payload = dto.payload, let store else {
+                guard let payload = document(dto), let store else {
                     summary.documentsSkipped += 1
                     continue
                 }
