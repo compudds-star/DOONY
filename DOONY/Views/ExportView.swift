@@ -41,23 +41,18 @@ struct ExportView: View {
                 }
 
                 Section("Backup & restore") {
-                    exportButton("Backup (data only)") {
-                        [backup(includeDocuments: false)]
-                    }
-                    exportButton("Backup with documents") {
-                        [backup(includeDocuments: true)]
-                    }
+                    exportButton("Back up everything") { [backup()] }
                     Button("Restore from backup…") { showRestorePicker = true }
                 }
 
                 Section {
                     Text("The CSV and PDF exports are reports for your CPA — they cannot be "
-                       + "loaded back in. A **backup** can. Deleting the app erases everything "
-                       + "on the device permanently, so take a backup before you delete or "
-                       + "reinstall.\n\n"
-                       + "\"Backup with documents\" also carries your attached files, which "
-                       + "makes the file as large as those documents. A data-only backup is "
-                       + "small and still covers every day count and dossier entry.\n\n"
+                       + "loaded back in. A **backup** can, and it contains everything: every "
+                       + "day count, every dossier entry, and every attached document. "
+                       + "Deleting the app erases all of it permanently, so take a backup "
+                       + "before you delete or reinstall.\n\n"
+                       + "The file is about as large as your attached documents, so it may be "
+                       + "too big to email — save it to Files or iCloud Drive.\n\n"
                        + "Restoring merges: existing records are updated, new ones added, and "
                        + "nothing already on the device is deleted.")
                         .font(.footnote).foregroundStyle(.secondary)
@@ -74,7 +69,7 @@ struct ExportView: View {
                 if !shareItems.isEmpty { ShareSheet(items: shareItems) }
             }
             .fileImporter(isPresented: $showRestorePicker,
-                          allowedContentTypes: [.json],
+                          allowedContentTypes: [.data],
                           allowsMultipleSelection: false) { result in
                 restore(from: result)
             }
@@ -98,15 +93,19 @@ struct ExportView: View {
     private func file(_ contents: String, _ name: String) -> Any? { TempFile.write(contents, name: name) }
     private func pdf(_ data: Data, _ name: String) -> Any? { TempFile.write(data, name: name) }
 
-    private func backup(includeDocuments: Bool) -> Any? {
-        let store = try? AttachmentStore()
-        guard let data = try? BackupArchive.export(context: context,
-                                                   store: store,
-                                                   includeDocuments: includeDocuments)
-        else { return nil }
+    private func backup() -> Any? {
         let stamp = ISO8601DateFormatter.backupStamp.string(from: .now)
-        let suffix = includeDocuments ? "-with-documents" : ""
-        return TempFile.write(data, name: "doony-backup-\(stamp)\(suffix).json")
+        let url = FileManager.default.temporaryDirectory
+            .appending(path: "doony-backup-\(stamp).doonybackup")
+        try? FileManager.default.removeItem(at: url)
+        do {
+            // Streams straight to the file — the archive is never held whole in
+            // memory, so a dossier full of scanned documents cannot exhaust it.
+            try BackupArchive.export(context: context, store: try? AttachmentStore(), to: url)
+            return url
+        } catch {
+            return nil
+        }
     }
 
     private func restore(from result: Result<[URL], Error>) {
@@ -116,8 +115,7 @@ struct ExportView: View {
             let scoped = url.startAccessingSecurityScopedResource()
             defer { if scoped { url.stopAccessingSecurityScopedResource() } }
 
-            let data = try Data(contentsOf: url)
-            let summary = try BackupArchive.restore(from: data,
+            let summary = try BackupArchive.restore(from: url,
                                                     context: context,
                                                     store: try? AttachmentStore())
             resultIsError = false
