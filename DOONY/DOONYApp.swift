@@ -17,7 +17,10 @@ struct DOONYApp: App {
             Attachment.self
         ])
 
-        // Store lives in Application Support, excluded from backup.
+        // Store lives in Application Support. NOTE: it is deliberately NOT
+        // excluded from iCloud/iTunes backup — the day count is the one thing
+        // that cannot be reconstructed, so it should survive a device restore.
+        // (The encrypted attachment blobs ARE excluded; see AttachmentCrypto.)
         let storeURL = URL.applicationSupportDirectory.appending(path: "DOONY.store")
         let config = ModelConfiguration(schema: schema, url: storeURL, cloudKitDatabase: .none)
 
