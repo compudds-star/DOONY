@@ -25,11 +25,16 @@ targets:
     deploymentTarget: "17.0"
     sources:
       - path: DOONY
-    entitlements:
-      path: DOONY/DOONY.entitlements
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.doony.app
+        # Point at the hand-maintained entitlements file. Do NOT use XcodeGen's
+        # `entitlements:` key here — exactly like `info:` below, that key means
+        # "GENERATE this file", and with no `properties:` it rewrites
+        # DOONY.entitlements to an empty <dict/> on every `xcodegen generate`,
+        # silently dropping the Data Protection capability. CODE_SIGN_ENTITLEMENTS
+        # just references the file instead.
+        CODE_SIGN_ENTITLEMENTS: DOONY/DOONY.entitlements
         # Use our hand-maintained Info.plist AS-IS. Do NOT use XcodeGen's `info:`
         # key here — that regenerates/overwrites the file on every `xcodegen
         # generate`, wiping UILaunchScreen (iPhone-16 native resolution) and the
