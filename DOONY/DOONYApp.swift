@@ -7,6 +7,7 @@ struct DOONYApp: App {
     let container: ModelContainer
     @StateObject private var locationManager: LocationManager
     @Environment(\.scenePhase) private var scenePhase
+    @State private var showSplash = true
 
     init() {
         let schema = Schema([
@@ -48,9 +49,24 @@ struct DOONYApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootTabView()
-                .environmentObject(locationManager)
-                .onAppear { locationManager.startTracking() }
+            ZStack {
+                RootTabView()
+                    .environmentObject(locationManager)
+                    .onAppear { locationManager.startTracking() }
+
+                if showSplash {
+                    SplashView()
+                        .transition(.opacity)
+                        // Sits above the tab bar during the hand-off.
+                        .zIndex(1)
+                }
+            }
+            .task {
+                // Long enough to read the version, short enough not to be in
+                // the way. The app is already live underneath.
+                try? await Task.sleep(for: .seconds(1.4))
+                withAnimation(.easeOut(duration: 0.45)) { showSplash = false }
+            }
         }
         .modelContainer(container)
         .onChange(of: scenePhase) { _, phase in
