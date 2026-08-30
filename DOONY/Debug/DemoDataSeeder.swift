@@ -62,22 +62,44 @@ enum DemoDataSeeder {
     // NY for the summer. Lands comfortably under the 183-day threshold, which is
     // the story a screenshot should tell.
 
-    private static func plannedStatus(for date: Date) -> DayStatus {
-        let cal = NYCalendar.calendar
-        let month = cal.component(.month, from: date)
-        let day = cal.component(.day, from: date)
-        switch month {
-        case 5 where (10...20).contains(day): return .ny   // spring trip north
-        case 6 where day >= 16: return .ny                 // up for the summer
-        case 7, 8, 9: return .ny
-        default: return .nonNY                             // Florida
+    /// Days before today that the crossing back to Florida happened. Kept close
+    /// to today deliberately: the heatmap opens on the current month, so the
+    /// month on screen needs both colors in it rather than a wall of one.
+    private static let crossingDaysAgo = 6
+
+    /// Defined relative to today, not by fixed calendar months, so the seeded
+    /// year looks the same whenever it is run.
+    private static func plannedStatus(daysAgo n: Int) -> DayStatus {
+        switch n {
+        case crossingDaysAgo...75: return .ny   // summer in New York
+        case 100...110: return .ny              // short trip north in the spring
+        default: return .nonNY                  // Florida
         }
+    }
+
+    private static func daysAgo(_ date: Date) -> Int {
+        let cal = NYCalendar.calendar
+        let a = cal.startOfDay(for: date), b = cal.startOfDay(for: Date())
+        return cal.dateComponents([.day], from: a, to: b).day ?? 0
+    }
+
+    private static func plannedStatus(for date: Date) -> DayStatus {
+        plannedStatus(daysAgo: daysAgo(date))
     }
 
     /// Days the phone was off or had no fix — left Unverified, never guessed.
     private static let unverifiedOffsets: Set<Int> = [23, 71, 118, 149, 190, 205]
     /// Days with a sample inside the near-border buffer, flagged for review.
     private static let ambiguousOffsets: Set<Int> = [131, 132, 168, 199, 221]
+
+    /// The day the detail screenshot opens on: the day of the drive south. It is
+    /// recent enough to carry raw samples, genuinely sits near the state line,
+    /// and counts as an NY day because any part of a day in NY counts as one —
+    /// which is exactly the case worth showing.
+    static var screenshotDayKey: String {
+        let d = NYCalendar.calendar.date(byAdding: .day, value: -crossingDaysAgo, to: Date()) ?? Date()
+        return NYCalendar.dayKey(for: d)
+    }
 
     private static func seedDays(_ c: ModelContext) {
         let cal = NYCalendar.calendar
@@ -90,7 +112,7 @@ enum DemoDataSeeder {
         while date <= today {
             let key = NYCalendar.dayKey(for: date)
             let unverified = unverifiedOffsets.contains(offset)
-            let ambiguous = ambiguousOffsets.contains(offset)
+            let ambiguous = ambiguousOffsets.contains(offset) || key == screenshotDayKey
             let status: DayStatus = unverified ? .unverified : plannedStatus(for: date)
 
             c.insert(DayClassification(
@@ -116,8 +138,10 @@ enum DemoDataSeeder {
 
     private static func seedSamples(_ c: ModelContext, dayKey: String, date: Date,
                                     status: DayStatus, ambiguous: Bool) {
-        // Manhattan and Delray Beach, jittered a little so the points differ.
-        let base = status == .ny ? (40.7549, -73.9840) : (26.4615, -80.0728)
+        // Manhattan, Delray Beach, or — on a flagged day — the NY/NJ line near
+        // Port Jervis, so a near-border sample is actually near the border.
+        let base: (Double, Double) = ambiguous ? (41.3751, -74.6927)
+                                  : (status == .ny ? (40.7549, -73.9840) : (26.4615, -80.0728))
         for hour in [8, 13, 19] {
             let jitter = { (Double.random(in: -0.004...0.004)) }
             let stamp = NYCalendar.calendar.date(bySettingHour: hour, minute: Int.random(in: 0...59),

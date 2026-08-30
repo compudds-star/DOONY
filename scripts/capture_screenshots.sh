@@ -40,15 +40,20 @@ xcrun simctl uninstall "$SIM" com.doony.app 2>/dev/null || true
 xcrun simctl install "$SIM" "$APP"
 xcrun simctl privacy "$SIM" grant location-always com.doony.app 2>/dev/null || true
 
-names=(01-days 02-domicile 03-export)
-for tab in 0 1 2; do
-  name="${names[$tab]}"
+shoot() {  # shoot <name> <launch args...>
+  local name="$1"; shift
   echo "==> Capturing $name"
   xcrun simctl terminate "$SIM" com.doony.app >/dev/null 2>&1 || true
-  xcrun simctl launch "$SIM" com.doony.app -DOONYSeedDemoData -DOONYScreenshotTab "$tab" >/dev/null
+  xcrun simctl launch "$SIM" com.doony.app -DOONYSeedDemoData "$@" >/dev/null
   python3 -c "import time; time.sleep(4)"
   xcrun simctl io "$SIM" screenshot "$OUT/$name.png" >/dev/null 2>&1
-done
+}
+
+shoot 01-days      -DOONYScreenshotTab 0
+shoot 02-heatmap   -DOONYScreenshotScreen heatmap
+shoot 03-day       -DOONYScreenshotScreen day
+shoot 04-domicile  -DOONYScreenshotTab 1
+shoot 05-export    -DOONYScreenshotTab 2
 
 echo
 echo "Wrote to $OUT:"
@@ -56,7 +61,3 @@ for f in "$OUT"/*.png; do
   printf '  %-28s %s\n' "$(basename "$f")" \
     "$(sips -g pixelWidth -g pixelHeight "$f" | awk '/pixel/{printf "%s ", $2}')"
 done
-echo
-echo "For the calendar heatmap and day-detail screens, tap through from the Days"
-echo "tab in the running simulator and press Cmd+S. Those sit behind navigation"
-echo "the launch arguments do not reach."

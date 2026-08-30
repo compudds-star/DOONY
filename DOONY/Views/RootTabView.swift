@@ -6,7 +6,7 @@ struct RootTabView: View {
 
     var body: some View {
         TabView(selection: $selection) {
-            YearSummaryView()
+            daysTab
                 .tabItem { Label("Days", systemImage: "calendar") }
                 .tag(0)
 
@@ -19,6 +19,37 @@ struct RootTabView: View {
                 .tag(2)
         }
     }
+
+    /// Normally the year summary. In Debug, `-DOONYScreenshotScreen heatmap|day`
+    /// opens a screen that otherwise sits behind navigation, so screenshot
+    /// capture can be scripted without simulating taps.
+    @ViewBuilder private var daysTab: some View {
+        #if DEBUG
+        switch RootTabView.screenshotScreen {
+        case "heatmap":
+            NavigationStack {
+                CalendarHeatmapView(year: NYCalendar.calendar.component(.year, from: .now))
+            }
+        case "day":
+            NavigationStack {
+                DayDetailView(dayKey: DemoDataSeeder.screenshotDayKey)
+            }
+        default:
+            YearSummaryView()
+        }
+        #else
+        YearSummaryView()
+        #endif
+    }
+
+    #if DEBUG
+    private static var screenshotScreen: String {
+        let args = ProcessInfo.processInfo.arguments
+        guard let i = args.firstIndex(of: "-DOONYScreenshotScreen"), i + 1 < args.count
+        else { return "" }
+        return args[i + 1]
+    }
+    #endif
 
     /// Normally the Days tab. In Debug, `-DOONYScreenshotTab <0|1|2>` opens
     /// straight to a tab so screenshot capture can be scripted without taps.
