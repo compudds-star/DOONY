@@ -7,8 +7,8 @@ import UniformTypeIdentifiers
 /// can leave the device, and only when the user taps Share.
 struct ExportView: View {
     @Environment(\.modelContext) private var context
-    @State private var shareItems: [Any] = []
-    @State private var showShare = false
+    @State private var share: SharePayload?
+    @State private var busy: String?
     @State private var showRestorePicker = false
     @State private var resultMessage: String?
     @State private var resultIsError = false
@@ -65,15 +65,19 @@ struct ExportView: View {
                 }
             }
             .navigationTitle("Export")
-            .sheet(isPresented: $showShare) {
-                if !shareItems.isEmpty { ShareSheet(items: shareItems) }
-            }
+            // `.sheet(item:)`, not `.sheet(isPresented:)`. With isPresented the
+            // content closure could run before the items state update was
+            // visible, so the first tap presented an empty sheet that looked
+            // like a hang; a second tap worked only because the stale items
+            // were populated by then. Binding the sheet to the payload itself
+            // makes that race impossible.
+            .sheet(item: $share) { ShareSheet(items: $0.items) }
             .fileImporter(isPresented: $showRestorePicker,
                           allowedContentTypes: [.data],
                           allowsMultipleSelection: false) { result in
                 restore(from: result)
             }
-            .alert(resultIsError ? "Restore failed" : "Restore complete",
+            .alert(resultIsError ? "Something went wrong" : "Restore complete",
                    isPresented: Binding(get: { resultMessage != nil },
                                         set: { if !$0 { resultMessage = nil } })) {
                 Button("OK", role: .cancel) { resultMessage = nil }
@@ -84,10 +88,33 @@ struct ExportView: View {
     }
 
     private func exportButton(_ title: String, build: @escaping () -> [Any?]) -> some View {
-        Button(title) {
-            shareItems = build().compactMap { $0 }
-            if !shareItems.isEmpty { showShare = true }
+        Button {
+            guard busy == nil else { return }
+            busy = title
+            // Yield once so the row can paint its spinner before the work
+            // starts. Building a backup with documents is not instant, and a
+            // frozen row with no feedback is what made this look broken.
+            Task { @MainActor in
+                await Task.yield()
+                let items = build().compactMap { $0 }
+                busy = nil
+                if items.isEmpty {
+                    resultIsError = true
+                    resultMessage = "Could not build that file."
+                } else {
+                    share = SharePayload(items: items)
+                }
+            }
+        } label: {
+            HStack {
+                Text(title)
+                if busy == title {
+                    Spacer()
+                    ProgressView()
+                }
+            }
         }
+        .disabled(busy != nil)
     }
 
     private func file(_ contents: String, _ name: String) -> Any? { TempFile.write(contents, name: name) }
@@ -125,6 +152,13 @@ struct ExportView: View {
             resultMessage = error.localizedDescription
         }
     }
+}
+
+/// Identifies one share invocation, so the sheet is driven by the payload
+/// rather than by a separate boolean that can disagree with it.
+private struct SharePayload: Identifiable {
+    let id = UUID()
+    let items: [Any]
 }
 
 private extension ISO8601DateFormatter {

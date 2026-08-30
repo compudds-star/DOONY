@@ -22,8 +22,17 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<!-- Background colour only, matching SplashView's ground. Without this the
+	     app flashed white before the dark splash appeared. Deliberately no
+	     UIImageName: the system centres its image, SplashView positions the
+	     logo higher to leave room for the wordmark, and running both produced a
+	     visible double image during the hand-off. The system screen supplies the
+	     colour; SplashView draws everything else. -->
 	<key>UILaunchScreen</key>
-	<dict/>
+	<dict>
+		<key>UIColorName</key>
+		<string>SplashGround</string>
+	</dict>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
