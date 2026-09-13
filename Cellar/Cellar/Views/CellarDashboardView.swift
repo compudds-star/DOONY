@@ -12,7 +12,8 @@ struct CellarDashboardView: View {
     @State private var exportItem: ExportItem?
     @State private var exportError: String?
 
-    private var stats: CellarStats { CellarStats(wines: wines) }
+    private var owned: [Wine] { wines.filter { !$0.isWishlist } }
+    private var stats: CellarStats { CellarStats(wines: owned) }
 
     var body: some View {
         NavigationStack {
@@ -62,15 +63,15 @@ struct CellarDashboardView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         Button {
-                            export { try CellarCSVExporter.write(wines) }
+                            export { try CellarCSVExporter.write(owned) }
                         } label: { Label("Export CSV", systemImage: "tablecells") }
                         Button {
-                            export { try CellarPDFExporter.write(wines) }
+                            export { try CellarPDFExporter.write(owned) }
                         } label: { Label("Export PDF summary", systemImage: "doc.richtext") }
                     } label: {
                         Label("Export", systemImage: "square.and.arrow.up")
                     }
-                    .disabled(wines.isEmpty)
+                    .disabled(owned.isEmpty)
                 }
             }
             .sheet(item: $exportItem) { item in

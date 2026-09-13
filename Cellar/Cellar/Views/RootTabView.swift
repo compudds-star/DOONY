@@ -5,6 +5,8 @@ struct RootTabView: View {
         TabView {
             CellarListView()
                 .tabItem { Label("Cellar", systemImage: "square.grid.2x2") }
+            WishlistView()
+                .tabItem { Label("Wishlist", systemImage: "star") }
             CellarDashboardView()
                 .tabItem { Label("Value", systemImage: "chart.pie") }
         }
@@ -19,6 +21,7 @@ struct RootTabView: View {
 
 #Preview {
     RootTabView()
-        .modelContainer(for: [Wine.self, Bottle.self, ValuationSnapshot.self, PurchaseOption.self],
+        .modelContainer(for: [Wine.self, Bottle.self, ValuationSnapshot.self, PurchaseOption.self,
+                              TastingNote.self],
                         inMemory: true)
 }

@@ -19,8 +19,24 @@ curl "http://127.0.0.1:8787/valuation?q=Opus%20One&vintage=2018"
 ```
 
 You'll get back the contract JSON. Point the app's Settings → endpoint at
-`http://127.0.0.1:8787` on the simulator to test end-to-end (device/App Store
-needs HTTPS — see below).
+**`http://127.0.0.1:8787`** (note **http**, not https — the proxy is plain HTTP
+locally; TLS is added by nginx only on the Oracle host). The app allows cleartext
+to localhost via `NSAllowsLocalNetworking`, so this works on the simulator.
+On a physical iPhone, `127.0.0.1` is the phone itself — use your Mac's LAN IP
+instead (e.g. `http://192.168.1.20:8787`). Device/App Store use needs the HTTPS
+domain (see below).
+
+### Fixing the Wine-Searcher field mapping
+
+Their exact response schema isn't public, so run once with `DEBUG_UPSTREAM=1`:
+
+```bash
+PROVIDER=winesearcher DEBUG_UPSTREAM=1 WS_API_URL=... WS_API_KEY=... npm start
+curl -s "http://127.0.0.1:8787/valuation?q=Opus%20One&vintage=2018" | jq ._raw
+```
+
+`_raw` is the untouched provider JSON. Compare it to the mapped fields and edit
+the paths marked `ADJUST` in `server.js`. Turn `DEBUG_UPSTREAM` off for production.
 
 ## The contract it serves
 

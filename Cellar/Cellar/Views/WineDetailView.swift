@@ -94,6 +94,33 @@ struct WineDetailView: View {
                 }
             }
 
+            if wine.isWishlist {
+                Section {
+                    Button {
+                        wine.isWishlist = false
+                        let bottle = Bottle(size: .standard)
+                        bottle.wine = wine
+                        context.insert(bottle)
+                    } label: {
+                        Label("Move to cellar", systemImage: "tray.and.arrow.down")
+                    }
+                }
+            }
+
+            Section("Tasting notes") {
+                ForEach(wine.tastingNotes.sorted { $0.date > $1.date }) { note in
+                    TastingNoteRow(note: note)
+                }
+                .onDelete(perform: deleteNotes)
+                Button {
+                    let note = TastingNote(text: "")
+                    note.wine = wine
+                    context.insert(note)
+                } label: {
+                    Label("Add note", systemImage: "plus")
+                }
+            }
+
             Section("Bottles (\(wine.inStockCount) in stock)") {
                 ForEach(wine.bottles.sorted { $0.addedAt < $1.addedAt }) { bottle in
                     BottleRow(bottle: bottle)
@@ -144,6 +171,11 @@ struct WineDetailView: View {
         }
     }
 
+    private func deleteNotes(at offsets: IndexSet) {
+        let sorted = wine.tastingNotes.sorted { $0.date > $1.date }
+        for index in offsets { context.delete(sorted[index]) }
+    }
+
     private func ratingLabel(_ rating: Int?) -> String {
         guard let rating, rating > 0 else { return "Unrated" }
         return "\(rating) pts"
@@ -157,6 +189,27 @@ struct WineDetailView: View {
                 Spacer()
                 Text(value)
             }
+        }
+    }
+}
+
+struct TastingNoteRow: View {
+    @Bindable var note: TastingNote
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(note.date.formatted(date: .abbreviated, time: .omitted))
+                    .font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Stepper(note.score.map { "\($0) pts" } ?? "No score",
+                        value: Binding(get: { note.score ?? 0 },
+                                       set: { note.score = $0 > 0 ? $0 : nil }),
+                        in: 0...100)
+                    .fixedSize()
+            }
+            TextField("Tasting note", text: $note.text, axis: .vertical)
+                .lineLimit(1...6)
         }
     }
 }

@@ -8,6 +8,12 @@ struct AddWineFlow: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
 
+    enum Destination: String, CaseIterable, Identifiable {
+        case cellar = "Cellar", wishlist = "Wishlist"
+        var id: String { rawValue }
+    }
+    @State private var destination: Destination = .cellar
+
     // Wine fields
     @State private var producer = ""
     @State private var name = ""
@@ -51,6 +57,13 @@ struct AddWineFlow: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    Picker("Save to", selection: $destination) {
+                        ForEach(Destination.allCases) { Text($0.rawValue).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                }
+
                 Section {
                     Button {
                         showingScanner = true
@@ -119,6 +132,7 @@ struct AddWineFlow: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
 
+                if destination == .cellar {
                 Section("Add to cellar") {
                     Stepper("Quantity: \(quantity)", value: $quantity, in: 1...240)
                     Picker("Size", selection: $size) {
@@ -139,6 +153,7 @@ struct AddWineFlow: View {
                         TextField("Drink to (year)", text: $drinkToText)
                             .keyboardType(.numberPad)
                     }
+                }
                 }
 
                 Section {
@@ -215,22 +230,25 @@ struct AddWineFlow: View {
             labelImage: labelImage,
             notes: notes,
             manualEstimatedValue: Decimal(string: estimateText),
-            rating: rating > 0 ? rating : nil)
+            rating: rating > 0 ? rating : nil,
+            isWishlist: destination == .wishlist)
         context.insert(wine)
 
-        let price = Decimal(string: priceText)
-        for _ in 0..<quantity {
-            let bottle = Bottle(size: size,
-                                purchasePrice: price,
-                                purchaseDate: price != nil ? .now : nil,
-                                storageLocation: storageLocation,
-                                drinkFrom: Int(drinkFromText),
-                                drinkTo: Int(drinkToText))
-            bottle.wine = wine
-            context.insert(bottle)
+        if destination == .cellar {
+            let price = Decimal(string: priceText)
+            for _ in 0..<quantity {
+                let bottle = Bottle(size: size,
+                                    purchasePrice: price,
+                                    purchaseDate: price != nil ? .now : nil,
+                                    storageLocation: storageLocation,
+                                    drinkFrom: Int(drinkFromText),
+                                    drinkTo: Int(drinkToText))
+                bottle.wine = wine
+                context.insert(bottle)
+            }
+            // Schedule drink-window reminders for the newly added bottles.
+            Task { DrinkWindowNotifier.schedule(for: wine) }
         }
-        // Schedule drink-window reminders for the newly added bottles.
-        Task { DrinkWindowNotifier.schedule(for: wine) }
         dismiss()
     }
 }

@@ -84,6 +84,9 @@ final class Wine {
     var rating: Int?
     /// Critic/community score from the pricing endpoint (nil until fetched).
     var communityScore: Int?
+    /// True = a wine you want but don't own yet (shown on the Wishlist tab,
+    /// excluded from cellar value). Owned wines are false.
+    var isWishlist: Bool
     var createdAt: Date
 
     @Relationship(deleteRule: .cascade, inverse: \Bottle.wine)
@@ -92,6 +95,8 @@ final class Wine {
     var valuations: [ValuationSnapshot]
     @Relationship(deleteRule: .cascade, inverse: \PurchaseOption.wine)
     var purchaseOptions: [PurchaseOption]
+    @Relationship(deleteRule: .cascade, inverse: \TastingNote.wine)
+    var tastingNotes: [TastingNote]
 
     init(name: String,
          producer: String = "",
@@ -104,7 +109,8 @@ final class Wine {
          labelImage: Data? = nil,
          notes: String = "",
          manualEstimatedValue: Decimal? = nil,
-         rating: Int? = nil) {
+         rating: Int? = nil,
+         isWishlist: Bool = false) {
         self.id = UUID()
         self.name = name
         self.producer = producer
@@ -118,10 +124,12 @@ final class Wine {
         self.notes = notes
         self.manualEstimatedValue = manualEstimatedValue
         self.rating = rating
+        self.isWishlist = isWishlist
         self.createdAt = .now
         self.bottles = []
         self.valuations = []
         self.purchaseOptions = []
+        self.tastingNotes = []
     }
 
     var type: WineType {

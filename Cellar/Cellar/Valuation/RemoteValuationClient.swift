@@ -96,7 +96,7 @@ struct RemoteValuationClient: ValuationService, PurchaseService {
 
     private func makeRequest(for wine: Wine) throws -> URLRequest? {
         guard let base = config.baseURL else { throw ValuationError.notConfigured }
-        guard base.scheme?.lowercased() == "https" else { throw ValuationError.insecureEndpoint }
+        guard ValuationConfig.isAcceptableEndpoint(base) else { throw ValuationError.insecureEndpoint }
 
         guard var comps = URLComponents(
             url: base.appendingPathComponent("valuation"),

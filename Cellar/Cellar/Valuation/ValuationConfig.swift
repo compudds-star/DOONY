@@ -17,10 +17,26 @@ struct ValuationConfig {
         ValuationConfig(baseURL: ValuationSettings.baseURL, apiKey: APIKeyStore.load())
     }
 
-    /// Configured enough to attempt a lookup (endpoint present and HTTPS).
+    /// Configured enough to attempt a lookup (endpoint present and acceptable).
     var isConfigured: Bool {
         guard let baseURL else { return false }
-        return baseURL.scheme?.lowercased() == "https"
+        return ValuationConfig.isAcceptableEndpoint(baseURL)
+    }
+
+    /// HTTPS is required for real hosts. Plain HTTP is allowed ONLY for a local
+    /// dev proxy (localhost / 127.0.0.1 / *.local) so you can test against the
+    /// proxy on your Mac before it's behind TLS. Info.plist's
+    /// NSAllowsLocalNetworking permits the cleartext connection for those hosts.
+    static func isAcceptableEndpoint(_ url: URL) -> Bool {
+        switch url.scheme?.lowercased() {
+        case "https":
+            return true
+        case "http":
+            guard let host = url.host?.lowercased() else { return false }
+            return host == "localhost" || host == "127.0.0.1" || host.hasSuffix(".local")
+        default:
+            return false
+        }
     }
 }
 

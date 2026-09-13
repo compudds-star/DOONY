@@ -13,6 +13,7 @@ struct CellarListView: View {
 
     private var filtered: [Wine] {
         wines.filter { wine in
+            guard !wine.isWishlist else { return false }
             let matchesType = typeFilter == nil || wine.type == typeFilter
             let matchesSearch = searchText.isEmpty
                 || wine.displayTitle.localizedCaseInsensitiveContains(searchText)
@@ -23,13 +24,13 @@ struct CellarListView: View {
     }
 
     private var cellarTotal: Decimal {
-        CellarStats(wines: wines).totalValue
+        CellarStats(wines: wines.filter { !$0.isWishlist }).totalValue
     }
 
     var body: some View {
         NavigationStack {
             Group {
-                if wines.isEmpty {
+                if !wines.contains(where: { !$0.isWishlist }) {
                     ContentUnavailableView {
                         Label("Your cellar is empty", systemImage: "wineglass")
                     } description: {

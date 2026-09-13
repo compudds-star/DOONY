@@ -162,7 +162,7 @@ async function lookupWineSearcher({ q, lwin, vintage, currency }) {
     inStock: o.in_stock ?? o.available ?? true,
   }));
   const prices = offers.map((o) => o.price).filter((n) => typeof n === "number");
-  return contract({
+  const out = contract({
     average: num(priceInfo.average ?? priceInfo.average_price) ?? (prices.length ? avg(prices) : null),
     min: num(priceInfo.min ?? priceInfo.min_price) ?? (prices.length ? Math.min(...prices) : null),
     max: num(priceInfo.max ?? priceInfo.max_price) ?? (prices.length ? Math.max(...prices) : null),
@@ -170,6 +170,10 @@ async function lookupWineSearcher({ q, lwin, vintage, currency }) {
     score: num(priceInfo.score ?? j?.score ?? j?.wine_score),
     offers,
   });
+  // Set DEBUG_UPSTREAM=1 to see the raw provider JSON alongside the mapped
+  // result, so you can correct the field paths above for your API's response.
+  if (process.env.DEBUG_UPSTREAM === "1") out._raw = j;
+  return out;
 }
 
 // ---- Apify adapter (pay-per-result Wine-Searcher scraper) -------------------
@@ -197,7 +201,7 @@ async function lookupApify({ q, lwin, vintage, currency }) {
     inStock: o.inStock ?? true,
   }));
   const prices = offers.map((o) => o.price).filter((n) => typeof n === "number");
-  return contract({
+  const out = contract({
     average: num(first.averagePrice ?? first.average) ?? (prices.length ? avg(prices) : null),
     min: num(first.minPrice) ?? (prices.length ? Math.min(...prices) : null),
     max: num(first.maxPrice) ?? (prices.length ? Math.max(...prices) : null),
@@ -205,6 +209,8 @@ async function lookupApify({ q, lwin, vintage, currency }) {
     score: num(first.score),
     offers,
   });
+  if (process.env.DEBUG_UPSTREAM === "1") out._raw = first;
+  return out;
 }
 
 // ---- helpers ----------------------------------------------------------------

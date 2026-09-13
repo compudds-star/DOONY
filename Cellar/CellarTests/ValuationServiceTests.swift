@@ -45,9 +45,15 @@ final class ValuationServiceTests: XCTestCase {
         XCTAssertFalse(cfg.isConfigured)
     }
 
-    func testHTTPEndpointIsRejected() {
+    func testRemoteHTTPEndpointIsRejected() {
         let cfg = ValuationConfig(baseURL: URL(string: "http://insecure.example.com"), apiKey: nil)
-        XCTAssertFalse(cfg.isConfigured)   // must be HTTPS
+        XCTAssertFalse(cfg.isConfigured)   // remote http must be HTTPS
+    }
+
+    func testLocalhostHTTPEndpointIsAllowed() {
+        // Plain http is permitted only for a local dev proxy.
+        XCTAssertTrue(ValuationConfig(baseURL: URL(string: "http://127.0.0.1:8787"), apiKey: nil).isConfigured)
+        XCTAssertTrue(ValuationConfig(baseURL: URL(string: "http://localhost:8787"), apiKey: nil).isConfigured)
     }
 
     func testHTTPSEndpointIsConfigured() {
