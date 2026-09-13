@@ -28,6 +28,15 @@ targets:
     deploymentTarget: "17.0"
     sources:
       - path: Cellar
+        # Info.plist and entitlements are referenced by build SETTINGS below
+        # (INFOPLIST_FILE / CODE_SIGN_ENTITLEMENTS), so they must NOT also be
+        # swept into the file/resources phases — otherwise Xcode runs two build
+        # commands that both write Cellar.app/Info.plist ("Multiple commands
+        # produce …"). Excluding them here leaves the settings as the only
+        # reference.
+        excludes:
+          - "Info.plist"
+          - "Cellar.entitlements"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.doony.cellar
