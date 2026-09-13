@@ -70,6 +70,9 @@ final class Wine {
     var country: String
     /// nil = non-vintage (NV), common for Champagne.
     var vintage: Int?
+    /// Canonical Liv-ex wine identity (7-digit LWIN), when matched. Stable
+    /// dedup/identity key and the handle a pricing API can look the wine up by.
+    var lwin7: String?
     var typeRaw: String
     /// JPEG of the label the user scanned/added. Kept small (resized on save).
     @Attribute(.externalStorage) var labelImage: Data?
@@ -93,6 +96,7 @@ final class Wine {
          country: String = "",
          vintage: Int? = nil,
          type: WineType = .red,
+         lwin7: String? = nil,
          labelImage: Data? = nil,
          notes: String = "",
          manualEstimatedValue: Decimal? = nil) {
@@ -103,6 +107,7 @@ final class Wine {
         self.region = region
         self.country = country
         self.vintage = vintage
+        self.lwin7 = lwin7
         self.typeRaw = type.rawValue
         self.labelImage = labelImage
         self.notes = notes
@@ -122,6 +127,12 @@ final class Wine {
         let v = vintage.map { String($0) } ?? "NV"
         let head = [producer, name].filter { !$0.isEmpty }.joined(separator: " ")
         return head.isEmpty ? "\(v) Unknown wine" : "\(v) \(head)"
+    }
+
+    /// Full 11-digit LWIN (wine + vintage), when the wine has a matched identity.
+    var lwin11: String? {
+        guard let lwin7 else { return nil }
+        return LWINMatcher.lwin11(lwin7: lwin7, vintage: vintage)
     }
 
     // MARK: Valuation

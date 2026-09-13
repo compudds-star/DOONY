@@ -8,6 +8,10 @@ struct RootTabView: View {
             CellarDashboardView()
                 .tabItem { Label("Value", systemImage: "chart.pie") }
         }
+        .task {
+            // Warm the LWIN index off the main thread so the first match is instant.
+            DispatchQueue.global(qos: .utility).async { LWINDatabase.shared.loadIfNeeded() }
+        }
     }
 }
 

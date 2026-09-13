@@ -27,7 +27,18 @@ struct AddWineFlow: View {
     @State private var storageLocation = ""
 
     @State private var showingScanner = false
+    @State private var showingLWIN = false
     @State private var photoItem: PhotosPickerItem?
+
+    // Canonical LWIN identity, once matched.
+    @State private var lwin7: String?
+    @State private var lwinTitle = ""
+
+    private var vintageInt: Int? { Int(vintageText) }
+    private var canMatchLWIN: Bool {
+        !producer.trimmingCharacters(in: .whitespaces).isEmpty
+        || !name.trimmingCharacters(in: .whitespaces).isEmpty
+    }
 
     private var canSave: Bool {
         !producer.trimmingCharacters(in: .whitespaces).isEmpty
@@ -62,6 +73,29 @@ struct AddWineFlow: View {
                         .keyboardType(.numberPad)
                     Picker("Type", selection: $type) {
                         ForEach(WineType.allCases) { Text($0.label).tag($0) }
+                    }
+                }
+
+                Section("Wine identity (LWIN)") {
+                    if let lwin7 {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(lwinTitle.isEmpty ? "Matched" : lwinTitle).lineLimit(1)
+                                Text("LWIN \(lwin7)")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Button("Change") { showingLWIN = true }
+                        }
+                    } else {
+                        Button {
+                            showingLWIN = true
+                        } label: {
+                            Label("Find LWIN match", systemImage: "checkmark.seal")
+                        }
+                        .disabled(!canMatchLWIN)
+                        Text("Optional. Snaps this wine to a canonical identity for de-duping and price lookups.")
+                            .font(.caption).foregroundStyle(.secondary)
                     }
                 }
 
@@ -109,6 +143,12 @@ struct AddWineFlow: View {
             .sheet(isPresented: $showingScanner) {
                 ScanSheet { parsed in apply(parsed) }
             }
+            .sheet(isPresented: $showingLWIN) {
+                LWINMatchView(producer: producer, name: name, region: region,
+                              vintage: vintageInt) { record in
+                    applyLWIN(record)
+                }
+            }
             .onChange(of: photoItem) { _, item in
                 guard let item else { return }
                 Task {
@@ -130,6 +170,23 @@ struct AddWineFlow: View {
         type = parsed.type
     }
 
+    /// Adopt a chosen LWIN record: store the identity and backfill any blank fields.
+    private func applyLWIN(_ record: LWINRecord) {
+        lwin7 = record.lwin7
+        lwinTitle = record.title
+        if producer.isEmpty { producer = record.producerName }
+        if name.isEmpty { name = record.wine }
+        if region.isEmpty { region = record.region }
+        if country.isEmpty { country = record.country }
+        // Derive type from the record's colour/type when we don't already have one.
+        let colour = record.colour.lowercased()
+        let recType = record.type.lowercased()
+        if recType.contains("sparkling") { type = .sparkling }
+        else if colour.contains("ros") { type = .rose }
+        else if colour.contains("white") { type = .white }
+        else if colour.contains("red") { type = .red }
+    }
+
     private func save() {
         let wine = Wine(
             name: name.trimmingCharacters(in: .whitespaces),
@@ -139,6 +196,7 @@ struct AddWineFlow: View {
             country: country.trimmingCharacters(in: .whitespaces),
             vintage: Int(vintageText),
             type: type,
+            lwin7: lwin7,
             labelImage: labelImage,
             notes: notes,
             manualEstimatedValue: Decimal(string: estimateText))

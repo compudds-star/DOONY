@@ -116,6 +116,36 @@ concrete `ValuationService`/`PurchaseService` you add next; see below.
 
 ---
 
+## Wine identity — LWIN matching (free, built in)
+
+`LWIN/*` snaps a scanned/typed wine to a canonical **Liv-ex Wine Identification
+Number** (the "ISBN for wine"). It's free, needs no API approval, and gives you
+a stable de-dup/identity key that a pricing API can later look the wine up by.
+
+- `LWINDatabase` loads a CSV once and builds an inverted token index (scores only
+  records sharing a token with the query, not all ~200k rows).
+- `LWINMatcher` scores candidates by token recall + Jaccard, with small bonuses
+  for matching region and a plausible vintage; returns ranked matches.
+- In **Add wine**, "Find LWIN match" opens `LWINMatchView`; picking a result
+  stores `Wine.lwin7` and backfills blank fields. `Wine.lwin11` composes
+  wine + vintage (NV → Liv-ex's `1000`).
+
+**Ships with a 20-wine sample** (`Cellar/Resources/lwin_sample.csv`) so the
+feature works immediately. The sample's codes start at `9000001` and are
+**illustrative, not authoritative** — replace them with the real database for
+full coverage and correct codes:
+
+1. Download the free LWIN database from Liv-ex (`liv-ex.com/lwin/`, Creative
+   Commons) as CSV.
+2. Drop it at `Cellar/Cellar/Resources/LWIN.csv`.
+3. Rebuild. `LWINDatabase` prefers `LWIN.csv` over the sample automatically; the
+   parser maps columns by header name (`LWIN`, `DISPLAY_NAME`, `PRODUCER_NAME`,
+   `WINE`, `COUNTRY`, `REGION`, `COLOUR`, `TYPE`, `FIRST_VINTAGE`,
+   `FINAL_VINTAGE`/`LATEST_VINTAGE`) so header order/extra columns don't matter.
+
+Because the sample codes aren't authoritative, don't feed a sample-derived
+`lwin7` to a pricing API as if it were real — swap in the Liv-ex file first.
+
 ## Common cellar-app features included / easy next
 
 **Included:** scan or manual add, label image, multi-bottle inventory with
