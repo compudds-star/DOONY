@@ -13,6 +13,7 @@ build/
 
 # XcodeGen output (regenerated from project.yml)
 DOONY.xcodeproj/
+Cellar/Cellar.xcodeproj/
 
 # Swift Package Manager
 .build/
