@@ -116,6 +116,9 @@ struct WineRow: View {
                     } else {
                         Text("no estimate").font(.caption).foregroundStyle(.tertiary)
                     }
+                    if let rating = wine.rating ?? wine.communityScore {
+                        Text("· \(rating) pts").font(.caption)
+                    }
                 }
                 .foregroundStyle(.secondary)
             }

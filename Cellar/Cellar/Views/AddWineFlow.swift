@@ -20,6 +20,7 @@ struct AddWineFlow: View {
     @State private var labelImage: Data?
 
     // Valuation + inventory
+    @State private var rating = 0            // 0 = unrated (100-pt scale)
     @State private var estimateText = ""
     @State private var quantity = 1
     @State private var size: BottleSize = .standard
@@ -97,6 +98,11 @@ struct AddWineFlow: View {
                         Text("Optional. Snaps this wine to a canonical identity for de-duping and price lookups.")
                             .font(.caption).foregroundStyle(.secondary)
                     }
+                }
+
+                Section("Your rating") {
+                    Stepper(rating == 0 ? "Unrated" : "\(rating) pts",
+                            value: $rating, in: 0...100)
                 }
 
                 Section("Estimated value") {
@@ -199,7 +205,8 @@ struct AddWineFlow: View {
             lwin7: lwin7,
             labelImage: labelImage,
             notes: notes,
-            manualEstimatedValue: Decimal(string: estimateText))
+            manualEstimatedValue: Decimal(string: estimateText),
+            rating: rating > 0 ? rating : nil)
         context.insert(wine)
 
         let price = Decimal(string: priceText)

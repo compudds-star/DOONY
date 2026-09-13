@@ -80,6 +80,10 @@ final class Wine {
     /// A manual override for the per-750mL estimated value. When set, it wins
     /// over any valuation snapshot. This is the offline-first source of truth.
     var manualEstimatedValue: Decimal?
+    /// Your own rating on the 100-point scale (nil = unrated).
+    var rating: Int?
+    /// Critic/community score from the pricing endpoint (nil until fetched).
+    var communityScore: Int?
     var createdAt: Date
 
     @Relationship(deleteRule: .cascade, inverse: \Bottle.wine)
@@ -99,7 +103,8 @@ final class Wine {
          lwin7: String? = nil,
          labelImage: Data? = nil,
          notes: String = "",
-         manualEstimatedValue: Decimal? = nil) {
+         manualEstimatedValue: Decimal? = nil,
+         rating: Int? = nil) {
         self.id = UUID()
         self.name = name
         self.producer = producer
@@ -112,6 +117,7 @@ final class Wine {
         self.labelImage = labelImage
         self.notes = notes
         self.manualEstimatedValue = manualEstimatedValue
+        self.rating = rating
         self.createdAt = .now
         self.bottles = []
         self.valuations = []
@@ -155,6 +161,11 @@ final class Wine {
     /// knows the cellar total is understated.
     var hasValuation: Bool {
         manualEstimatedValue != nil || latestValuation != nil
+    }
+
+    /// Lowest in-stock online offer price, if any offers have been fetched.
+    var bestOfferPrice: Decimal? {
+        purchaseOptions.filter { $0.inStock }.compactMap { $0.price }.min()
     }
 
     var inStockBottles: [Bottle] { bottles.filter { $0.status.isInCellar } }

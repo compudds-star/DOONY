@@ -53,6 +53,13 @@ struct WineDetailView: View {
                     Spacer()
                     Text(Money.string(wine.totalEstimatedValue)).fontWeight(.semibold)
                 }
+                if let best = wine.bestOfferPrice {
+                    HStack {
+                        Text("Best online price")
+                        Spacer()
+                        Text(Money.string(best)).foregroundStyle(.green)
+                    }
+                }
                 if let snap = wine.latestValuation {
                     Text("From \(snap.source), \(snap.asOf.formatted(date: .abbreviated, time: .omitted))")
                         .font(.caption).foregroundStyle(.secondary)
@@ -66,6 +73,25 @@ struct WineDetailView: View {
                     }
                 }
                 .disabled(refreshing)
+            }
+
+            Section("Rating") {
+                HStack {
+                    Text("Your rating")
+                    Spacer()
+                    Stepper(ratingLabel(wine.rating),
+                            value: Binding(get: { wine.rating ?? 0 },
+                                           set: { wine.rating = $0 > 0 ? $0 : nil }),
+                            in: 0...100)
+                        .fixedSize()
+                }
+                if let score = wine.communityScore {
+                    HStack {
+                        Text("Critic / community")
+                        Spacer()
+                        Text("\(score) pts").foregroundStyle(.secondary)
+                    }
+                }
             }
 
             Section("Bottles (\(wine.inStockCount) in stock)") {
@@ -116,6 +142,11 @@ struct WineDetailView: View {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func ratingLabel(_ rating: Int?) -> String {
+        guard let rating, rating > 0 else { return "Unrated" }
+        return "\(rating) pts"
     }
 
     @ViewBuilder

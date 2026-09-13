@@ -7,6 +7,8 @@ struct ValuationResult {
     var maxPrice: Decimal?
     var currency: String
     var source: String
+    /// Critic/community score on the 100-point scale, when the provider returns one.
+    var score: Int?
 }
 
 /// Abstraction over "what is this wine worth?" so the UI never knows whether
@@ -30,7 +32,8 @@ struct ManualValuationService: ValuationService {
                                minPrice: nil,
                                maxPrice: nil,
                                currency: "USD",
-                               source: "manual")
+                               source: "manual",
+                               score: nil)
     }
 }
 

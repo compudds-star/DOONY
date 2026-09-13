@@ -29,8 +29,9 @@ struct WhereToBuyView: View {
                          : "Set a pricing endpoint in Settings to show online offers.")
                         .font(.caption).foregroundStyle(.secondary)
                 } else {
-                    ForEach(offers) { offer in
-                        OfferRow(offer: offer)
+                    ForEach(Array(offers.enumerated()), id: \.element.id) { index, offer in
+                        // offers is sorted cheapest-first; badge the lowest price.
+                        OfferRow(offer: offer, isCheapest: index == 0 && offer.price != nil)
                     }
                 }
                 if ValuationCoordinator.isConfigured {
@@ -123,14 +124,24 @@ struct WhereToBuyView: View {
 
 struct OfferRow: View {
     let offer: PurchaseOption
+    var isCheapest = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack {
                 Text(offer.merchantName).fontWeight(.medium)
+                if isCheapest {
+                    Text("Best price")
+                        .font(.caption2).fontWeight(.semibold)
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(Color.green.opacity(0.2))
+                        .clipShape(Capsule())
+                }
                 Spacer()
                 if let price = offer.price {
                     Text(Money.string(price, currency: offer.currency))
+                        .fontWeight(isCheapest ? .semibold : .regular)
+                        .foregroundStyle(isCheapest ? .green : .primary)
                 }
             }
             if let address = offer.addressLine, !address.isEmpty {
