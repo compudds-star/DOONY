@@ -26,6 +26,8 @@ struct AddWineFlow: View {
     @State private var size: BottleSize = .standard
     @State private var priceText = ""
     @State private var storageLocation = ""
+    @State private var drinkFromText = ""
+    @State private var drinkToText = ""
 
     @State private var showingScanner = false
     @State private var showingLWIN = false
@@ -130,6 +132,13 @@ struct AddWineFlow: View {
                             .multilineTextAlignment(.trailing)
                     }
                     TextField("Storage location", text: $storageLocation)
+                    HStack {
+                        TextField("Drink from (year)", text: $drinkFromText)
+                            .keyboardType(.numberPad)
+                        Divider()
+                        TextField("Drink to (year)", text: $drinkToText)
+                            .keyboardType(.numberPad)
+                    }
                 }
 
                 Section {
@@ -214,10 +223,14 @@ struct AddWineFlow: View {
             let bottle = Bottle(size: size,
                                 purchasePrice: price,
                                 purchaseDate: price != nil ? .now : nil,
-                                storageLocation: storageLocation)
+                                storageLocation: storageLocation,
+                                drinkFrom: Int(drinkFromText),
+                                drinkTo: Int(drinkToText))
             bottle.wine = wine
             context.insert(bottle)
         }
+        // Schedule drink-window reminders for the newly added bottles.
+        Task { DrinkWindowNotifier.schedule(for: wine) }
         dismiss()
     }
 }

@@ -90,6 +90,10 @@ struct CellarListView: View {
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
             }
+            // Rebuild drink-window reminders when the cellar's composition changes.
+            .task(id: wines.count) {
+                await DrinkWindowNotifier.rescheduleAll(for: wines)
+            }
         }
     }
 

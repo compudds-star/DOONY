@@ -11,6 +11,8 @@ struct RootTabView: View {
         .task {
             // Warm the LWIN index off the main thread so the first match is instant.
             DispatchQueue.global(qos: .utility).async { LWINDatabase.shared.loadIfNeeded() }
+            // Ask once for permission to send drink-window reminders.
+            await DrinkWindowNotifier.requestAuthorization()
         }
     }
 }
