@@ -36,6 +36,8 @@ struct RemoteValuationDTO: Decodable {
     var currency: String?
     /// Critic/community score on the 100-point scale.
     var score: Int?
+    /// Label image URL.
+    var image: String?
     var offers: [OfferDTO]?
 
     struct OfferDTO: Decodable {
@@ -67,7 +69,8 @@ struct RemoteValuationClient: ValuationService, PurchaseService {
                                maxPrice: dto.max,
                                currency: dto.currency ?? "USD",
                                source: sourceName,
-                               score: dto.score)
+                               score: dto.score,
+                               imageURL: dto.image)
     }
 
     func offers(for wine: Wine) async throws -> [MerchantOffer] {

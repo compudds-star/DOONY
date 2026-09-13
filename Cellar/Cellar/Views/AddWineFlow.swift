@@ -116,8 +116,14 @@ struct AddWineFlow: View {
                 }
 
                 Section("Your rating") {
-                    Stepper(rating == 0 ? "Unrated" : "\(rating) pts",
-                            value: $rating, in: 0...100)
+                    HStack {
+                        StarRating(rating: $rating)
+                        Spacer()
+                        if rating > 0 {
+                            Button("Clear") { rating = 0 }
+                                .font(.caption).buttonStyle(.borderless)
+                        }
+                    }
                 }
 
                 Section("Estimated value") {
@@ -171,7 +177,12 @@ struct AddWineFlow: View {
                 }
             }
             .sheet(isPresented: $showingScanner) {
-                ScanSheet { parsed in apply(parsed) }
+                ScanSheet { parsed, image in
+                    apply(parsed)
+                    if let image, let data = image.jpegData(compressionQuality: 0.9) {
+                        labelImage = ImageResizer.jpeg(from: data, maxDimension: 1200)
+                    }
+                }
             }
             .sheet(isPresented: $showingLWIN) {
                 LWINMatchView(producer: producer, name: name, region: region,

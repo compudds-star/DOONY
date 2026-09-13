@@ -58,7 +58,8 @@ enum CellarPDFExporter {
                 left.draw(at: CGPoint(x: margin, y: y), withAttributes: rowAttr)
 
                 var right = Money.string(wine.totalEstimatedValue)
-                if let r = wine.rating ?? wine.communityScore { right = "\(r)pt · " + right }
+                if let r = wine.rating, r > 0 { right = "\(r)★ · " + right }
+                else if let s = wine.communityScore { right = "\(s)pt · " + right }
                 let rightSize = (right as NSString).size(withAttributes: rightRow)
                 right.draw(at: CGPoint(x: pageRect.width - margin - rightSize.width, y: y),
                            withAttributes: rightRow)

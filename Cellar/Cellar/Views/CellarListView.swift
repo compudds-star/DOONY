@@ -108,46 +108,29 @@ struct WineRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            LabelThumbnail(data: wine.labelImage, type: wine.type)
-            VStack(alignment: .leading, spacing: 2) {
+            WineThumbnail(imageData: wine.labelImage, imageURL: wine.imageURL, type: wine.type)
+            VStack(alignment: .leading, spacing: 3) {
                 Text(wine.displayTitle).font(.headline).lineLimit(2)
-                Text([wine.varietal, wine.region].filter { !$0.isEmpty }.joined(separator: " · "))
-                    .font(.subheadline).foregroundStyle(.secondary)
+                let sub = [wine.varietal, wine.region].filter { !$0.isEmpty }.joined(separator: " · ")
+                if !sub.isEmpty {
+                    Text(sub).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
+                }
                 HStack(spacing: 6) {
-                    Text("\(wine.inStockCount) in stock").font(.caption)
-                    if wine.hasValuation {
-                        Text(Money.string(wine.totalEstimatedValue))
-                            .font(.caption).fontWeight(.semibold)
-                    } else {
-                        Text("no estimate").font(.caption).foregroundStyle(.tertiary)
+                    if let rating = wine.rating, rating > 0 {
+                        StarsInline(rating: rating)
                     }
-                    if let rating = wine.rating ?? wine.communityScore {
-                        Text("· \(rating) pts").font(.caption)
+                    if !wine.isWishlist {
+                        Text("\(wine.inStockCount) in stock").font(.caption).foregroundStyle(.secondary)
+                        if wine.hasValuation {
+                            Text("· \(Money.string(wine.totalEstimatedValue))")
+                                .font(.caption).fontWeight(.semibold).foregroundStyle(.secondary)
+                        }
+                    } else if let best = wine.bestOfferPrice {
+                        Text("from \(Money.string(best))").font(.caption).foregroundStyle(.secondary)
                     }
                 }
-                .foregroundStyle(.secondary)
             }
         }
         .padding(.vertical, 4)
-    }
-}
-
-struct LabelThumbnail: View {
-    let data: Data?
-    let type: WineType
-
-    var body: some View {
-        Group {
-            if let data, let ui = UIImage(data: data) {
-                Image(uiImage: ui).resizable().scaledToFill()
-            } else {
-                ZStack {
-                    Rectangle().fill(.quaternary)
-                    Image(systemName: "wineglass").foregroundStyle(.secondary)
-                }
-            }
-        }
-        .frame(width: 44, height: 60)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 }

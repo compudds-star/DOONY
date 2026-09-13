@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import SwiftUI
 
 // MARK: - Enums
 
@@ -10,6 +11,18 @@ enum WineType: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .rose: return "Rosé"
         default: return rawValue.capitalized
+        }
+    }
+    /// Accent used for placeholder tiles and small type cues.
+    var tint: Color {
+        switch self {
+        case .red, .fortified: return Color(red: 0.44, green: 0.08, blue: 0.18)
+        case .white: return Color(red: 0.80, green: 0.70, blue: 0.35)
+        case .rose: return Color(red: 0.90, green: 0.55, blue: 0.60)
+        case .sparkling: return Color(red: 0.86, green: 0.74, blue: 0.42)
+        case .dessert: return Color(red: 0.70, green: 0.45, blue: 0.18)
+        case .orange: return Color(red: 0.85, green: 0.55, blue: 0.25)
+        case .other: return Color.gray
         }
     }
 }
@@ -76,6 +89,9 @@ final class Wine {
     var typeRaw: String
     /// JPEG of the label the user scanned/added. Kept small (resized on save).
     @Attribute(.externalStorage) var labelImage: Data?
+    /// Fallback label image URL from the pricing database, shown when there's no
+    /// scanned photo. Defaulted (not an init param) — set by the pricing refresh.
+    var imageURL: String? = nil
     var notes: String
     /// A manual override for the per-750mL estimated value. When set, it wins
     /// over any valuation snapshot. This is the offline-first source of truth.

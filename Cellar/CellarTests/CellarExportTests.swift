@@ -16,7 +16,7 @@ final class CellarExportTests: XCTestCase {
         let ctx = try makeContext()
         let wine = Wine(name: "Grange", producer: "Penfolds", varietal: "Shiraz",
                         region: "South Australia", country: "Australia", vintage: 2016,
-                        type: .red, manualEstimatedValue: 800, rating: 96)
+                        type: .red, manualEstimatedValue: 800, rating: 4)
         ctx.insert(wine)
         let bottle = Bottle(size: .standard, purchasePrice: 750, storageLocation: "Rack 1",
                             drinkFrom: 2026, drinkTo: 2045)
@@ -32,7 +32,7 @@ final class CellarExportTests: XCTestCase {
         XCTAssertTrue(row.contains("2016"))
         XCTAssertTrue(row.contains("Rack 1"))
         XCTAssertTrue(row.contains("2026"))   // drink from
-        XCTAssertTrue(row.contains("96"))     // rating
+        XCTAssertTrue(row.contains(",4,"))    // rating (1–5)
     }
 
     func testCSVEscapesCommas() throws {

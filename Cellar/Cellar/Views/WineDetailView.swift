@@ -11,13 +11,13 @@ struct WineDetailView: View {
 
     var body: some View {
         List {
-            if let data = wine.labelImage, let ui = UIImage(data: data) {
-                Section {
-                    Image(uiImage: ui).resizable().scaledToFit()
-                        .frame(maxWidth: .infinity).frame(maxHeight: 220)
-                }
-                .listRowInsets(EdgeInsets())
+            Section {
+                headerImage
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 240)
+                    .clipped()
             }
+            .listRowInsets(EdgeInsets())
 
             Section("Details") {
                 detailRow("Varietal", wine.varietal)
@@ -79,11 +79,9 @@ struct WineDetailView: View {
                 HStack {
                     Text("Your rating")
                     Spacer()
-                    Stepper(ratingLabel(wine.rating),
-                            value: Binding(get: { wine.rating ?? 0 },
-                                           set: { wine.rating = $0 > 0 ? $0 : nil }),
-                            in: 0...100)
-                        .fixedSize()
+                    StarRating(rating: Binding(get: { wine.rating ?? 0 },
+                                               set: { wine.rating = $0 > 0 ? $0 : nil }),
+                               size: 22)
                 }
                 if let score = wine.communityScore {
                     HStack {
@@ -176,9 +174,27 @@ struct WineDetailView: View {
         for index in offsets { context.delete(sorted[index]) }
     }
 
-    private func ratingLabel(_ rating: Int?) -> String {
-        guard let rating, rating > 0 else { return "Unrated" }
-        return "\(rating) pts"
+    @ViewBuilder
+    private var headerImage: some View {
+        if let data = wine.labelImage, let ui = UIImage(data: data) {
+            Image(uiImage: ui).resizable().scaledToFill()
+        } else if let s = wine.imageURL, let url = URL(string: s) {
+            AsyncImage(url: url) { phase in
+                if let image = phase.image { image.resizable().scaledToFill() }
+                else { headerPlaceholder }
+            }
+        } else {
+            headerPlaceholder
+        }
+    }
+
+    private var headerPlaceholder: some View {
+        ZStack {
+            LinearGradient(colors: [wine.type.tint.opacity(0.85), wine.type.tint.opacity(0.5)],
+                           startPoint: .top, endPoint: .bottom)
+            Image(systemName: "wineglass.fill")
+                .font(.system(size: 64)).foregroundStyle(.white.opacity(0.9))
+        }
     }
 
     @ViewBuilder
@@ -202,11 +218,9 @@ struct TastingNoteRow: View {
                 Text(note.date.formatted(date: .abbreviated, time: .omitted))
                     .font(.caption).foregroundStyle(.secondary)
                 Spacer()
-                Stepper(note.score.map { "\($0) pts" } ?? "No score",
-                        value: Binding(get: { note.score ?? 0 },
-                                       set: { note.score = $0 > 0 ? $0 : nil }),
-                        in: 0...100)
-                    .fixedSize()
+                StarRating(rating: Binding(get: { note.score ?? 0 },
+                                           set: { note.score = $0 > 0 ? $0 : nil }),
+                           size: 16)
             }
             TextField("Tasting note", text: $note.text, axis: .vertical)
                 .lineLimit(1...6)

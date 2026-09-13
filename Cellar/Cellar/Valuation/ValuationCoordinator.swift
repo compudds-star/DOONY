@@ -49,6 +49,8 @@ enum ValuationCoordinator {
             snapshot.wine = wine
             context.insert(snapshot)
             if let score = result.score { wine.communityScore = score }
+            // Only fill a DB image when there's no scanned photo.
+            if wine.labelImage == nil, let img = result.imageURL { wine.imageURL = img }
         }
 
         // Replace prior remotely-fetched offers; keep it simple and idempotent.

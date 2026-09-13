@@ -105,8 +105,8 @@ async function lookup(params) {
 }
 
 // The app's contract. Every adapter returns this shape.
-function contract({ average = null, min = null, max = null, currency = "USD", score = null, offers = [] }) {
-  return { average, min, max, currency, score, offers };
+function contract({ average = null, min = null, max = null, currency = "USD", score = null, image = null, offers = [] }) {
+  return { average, min, max, currency, score, image, offers };
 }
 
 // ---- Mock: deterministic fake data so the app works end-to-end today --------
@@ -127,7 +127,8 @@ function lookupMock({ q, lwin, currency }) {
     longitude: i === 2 ? -73.763 : null,
     inStock: true,
   }));
-  return contract({ average: avg, min, max, currency, score, offers });
+  const image = "https://placehold.co/240x320.png?text=" + encodeURIComponent(q || lwin || "Wine");
+  return contract({ average: avg, min, max, currency, score, image, offers });
 }
 
 // ---- Wine-Searcher adapter --------------------------------------------------
@@ -168,6 +169,7 @@ async function lookupWineSearcher({ q, lwin, vintage, currency }) {
     max: num(priceInfo.max ?? priceInfo.max_price) ?? (prices.length ? Math.max(...prices) : null),
     currency,
     score: num(priceInfo.score ?? j?.score ?? j?.wine_score),
+    image: priceInfo.image ?? j?.image ?? j?.image_url ?? null,
     offers,
   });
   // Set DEBUG_UPSTREAM=1 to see the raw provider JSON alongside the mapped
@@ -207,6 +209,7 @@ async function lookupApify({ q, lwin, vintage, currency }) {
     max: num(first.maxPrice) ?? (prices.length ? Math.max(...prices) : null),
     currency,
     score: num(first.score),
+    image: first.image ?? first.imageUrl ?? null,
     offers,
   });
   if (process.env.DEBUG_UPSTREAM === "1") out._raw = first;
