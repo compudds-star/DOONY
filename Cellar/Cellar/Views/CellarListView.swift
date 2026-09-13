@@ -7,6 +7,7 @@ struct CellarListView: View {
     private var wines: [Wine]
 
     @State private var showingAdd = false
+    @State private var showingSettings = false
     @State private var searchText = ""
     @State private var typeFilter: WineType?
 
@@ -73,6 +74,11 @@ struct CellarListView: View {
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
+                    Button { showingSettings = true } label: {
+                        Label("Settings", systemImage: "gearshape")
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
                     Button { showingAdd = true } label: {
                         Label("Add", systemImage: "plus")
                     }
@@ -80,6 +86,9 @@ struct CellarListView: View {
             }
             .sheet(isPresented: $showingAdd) {
                 AddWineFlow()
+            }
+            .sheet(isPresented: $showingSettings) {
+                SettingsView()
             }
         }
     }

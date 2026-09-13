@@ -6,6 +6,8 @@ struct WineDetailView: View {
     @Environment(\.modelContext) private var context
     @State private var estimateText = ""
     @State private var editingEstimate = false
+    @State private var refreshing = false
+    @State private var errorMessage: String?
 
     var body: some View {
         List {
@@ -55,6 +57,15 @@ struct WineDetailView: View {
                     Text("From \(snap.source), \(snap.asOf.formatted(date: .abbreviated, time: .omitted))")
                         .font(.caption).foregroundStyle(.secondary)
                 }
+                Button {
+                    Task { await refreshPrice() }
+                } label: {
+                    HStack {
+                        Label("Refresh price online", systemImage: "arrow.clockwise")
+                        if refreshing { Spacer(); ProgressView() }
+                    }
+                }
+                .disabled(refreshing)
             }
 
             Section("Bottles (\(wine.inStockCount) in stock)") {
@@ -84,6 +95,27 @@ struct WineDetailView: View {
         }
         .navigationTitle(wine.displayTitle)
         .navigationBarTitleDisplayMode(.inline)
+        .alert("Couldn't fetch price", isPresented: .constant(errorMessage != nil)) {
+            Button("OK") { errorMessage = nil }
+        } message: {
+            Text(errorMessage ?? "")
+        }
+    }
+
+    private func refreshPrice() async {
+        guard !refreshing else { return }
+        refreshing = true
+        defer { refreshing = false }
+        do {
+            let updated = try await ValuationCoordinator.refresh(wine, context: context, force: true)
+            if !updated {
+                errorMessage = "No pricing was returned for this wine."
+            }
+        } catch let error as ValuationError {
+            errorMessage = error.errorDescription
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     @ViewBuilder

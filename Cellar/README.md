@@ -90,29 +90,45 @@ concrete `ValuationService`/`PurchaseService` you add next; see below.
 
 ---
 
-## Adding online valuation & pricing later (no UI changes)
+## Online valuation & offers — built (Wine-Searcher / any provider)
 
-1. Stand up a small proxy on your Oracle host (holds the Wine-Searcher / retailer
-   API key, caches responses, rate-limits per device). The app never sees the key.
-2. Implement the protocols against it:
-   ```swift
-   struct WineSearcherValuationService: ValuationService {
-       func estimate(for wine: Wine) async throws -> ValuationResult? { /* call your proxy */ }
-   }
-   struct ProxyPurchaseService: PurchaseService {
-       func offers(for wine: Wine) async throws -> [MerchantOffer] { /* call your proxy */ }
-   }
-   ```
-3. Swap the instances in `WhereToBuyView` / wherever you refresh valuations, and
-   persist results as `ValuationSnapshot` / `PurchaseOption` rows. Done.
+`Valuation/RemoteValuationClient` implements both `ValuationService` and
+`PurchaseService` against **one provider-agnostic JSON endpoint**, so the app
+never encodes any single provider's schema. Your proxy (or a direct adapter)
+maps Wine-Searcher / Apify / CellarTracker into this contract:
+
+```
+GET {baseURL}/valuation?lwin={lwin11}&q={producer name}&vintage={year}&currency=USD
+→ { "average": 189.00, "min": 165.00, "max": 220.00, "currency": "USD",
+    "offers": [ { "merchant": "…", "price": 175.00, "currency": "USD",
+                  "url": "https://…", "address": "…",
+                  "latitude": 41.0, "longitude": -73.7, "inStock": true } ] }
+```
+
+- `ValuationCoordinator` picks the remote service when configured, enforces a
+  **7-day cache per wine** (a paid API is hit at most once per wine per week),
+  and persists results as `ValuationSnapshot` + `PurchaseOption` rows.
+- **Refresh price online** (wine detail) and **Refresh offers** (Where to buy)
+  trigger it; offers render with an Open link and Directions when a store
+  coordinate is present. Nearby-store search (MapKit) still works with no
+  endpoint at all.
+
+**Configure it** in Settings (gear icon):
+- **Endpoint** (`baseURL`) — stored in UserDefaults, must be HTTPS. Point it at
+  your Oracle-host proxy (recommended) or directly at a provider.
+- **API key** — stored in the **Keychain** (device-only, `ThisDeviceOnly`),
+  never in the bundle/`Info.plist`/logs; sent only as a `Bearer` header, never
+  in the URL. Leave blank if your proxy holds the key.
 
 **Security notes** (per your standing preference to check as you build):
-- API keys live on the proxy, never in the bundle or `Info.plist`.
-- All traffic is HTTPS; pin if you want, but at minimum validate the host.
-- The proxy rate-limits per install token so a leaked build can't run up your
-  API bill.
+- Key in Keychain, not the binary; HTTPS enforced (an `http://` endpoint is
+  rejected as "not configured"); credential never in the query string.
+- Recommended: proxy holds the real provider key and rate-limits per install so
+  a leaked build can't run up your API bill.
 - Cellar data is on-device only (`NSFileProtectionComplete`); nothing leaves the
   phone except the wine identity you send to price it.
+- The 7-day TTL keeps your Wine-Searcher trial (100 free calls/day) or Apify
+  per-wine (~2.5¢) cost negligible for a personal cellar.
 
 ---
 
