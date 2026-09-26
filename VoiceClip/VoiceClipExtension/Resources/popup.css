@@ -1,0 +1,68 @@
+:root {
+  --bg: #fff;
+  --fg: #1c1c1e;
+  --muted: #6e6e73;
+  --field: #f2f2f7;
+  --accent: #ff9f0a;
+  --accent-fg: #1c1c1e;
+  --ok: #248a3d;
+  --err: #d70015;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1e;
+    --fg: #f2f2f7;
+    --muted: #98989d;
+    --field: #2c2c2e;
+    --ok: #30d158;
+    --err: #ff453a;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 16px;
+  min-width: 300px;
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.4 -apple-system, system-ui, sans-serif;
+}
+label[for="cmd"] { display: block; font-weight: 600; margin-bottom: 8px; }
+.row { display: flex; gap: 8px; }
+input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  padding: 12px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--field);
+  color: var(--fg);
+  font-size: 17px; /* 16px+ stops iOS from zooming on focus */
+}
+button {
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+#mic { width: 48px; font-size: 22px; background: var(--field); }
+#mic.live { background: var(--err); }
+#go { width: 100%; margin-top: 10px; padding: 12px; background: var(--accent); color: var(--accent-fg); }
+#status { min-height: 1.4em; margin: 12px 0 4px; font-weight: 600; }
+#status.ok { color: var(--ok); }
+#status.err { color: var(--err); }
+.hint { margin: 0 0 8px; color: var(--muted); font-size: 14px; }
+h2 { margin: 16px 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+ul { list-style: none; margin: 0; padding: 0; }
+li {
+  padding: 9px 10px;
+  margin-bottom: 4px;
+  border-radius: 8px;
+  background: var(--field);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.toggle { display: flex; gap: 10px; align-items: flex-start; margin-top: 16px; font-size: 14px; color: var(--muted); }
+.toggle input { margin-top: 3px; }

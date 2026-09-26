@@ -1,0 +1,63 @@
+# XcodeGen spec — run `xcodegen generate` in this folder to produce
+# VoiceClip.xcodeproj. (brew install xcodegen)  See README.md.
+name: VoiceClip
+options:
+  bundleIdPrefix: com.compudds
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"   # bump before every upload
+    SWIFT_VERSION: "5.9"
+    DEVELOPMENT_TEAM: "24Q366W5BQ"
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    TARGETED_DEVICE_FAMILY: "1,2"
+
+targets:
+  VoiceClip:
+    type: application
+    platform: iOS
+    sources:
+      - path: VoiceClip
+      - path: Shared
+    dependencies:
+      - target: VoiceClipExtension
+        embed: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.compudds.voiceclip
+        # Reference the hand-maintained file; XcodeGen's `entitlements:` key
+        # would regenerate it and drop the App Group.
+        CODE_SIGN_ENTITLEMENTS: VoiceClip/VoiceClip.entitlements
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: VoiceClip
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
+
+  VoiceClipExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: VoiceClipExtension
+        excludes:
+          - "Resources/**"
+      - path: Shared
+      # Web extension files must sit at the .appex root. They're kept flat
+      # (no subfolders) so a plain resource copy lands them there.
+      - path: VoiceClipExtension/Resources
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.compudds.voiceclip.extension
+        PRODUCT_NAME: VoiceClip Extension
+        CODE_SIGN_ENTITLEMENTS: VoiceClipExtension/VoiceClipExtension.entitlements
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: VoiceClipExtension/Info.plist
+        SKIP_INSTALL: YES

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'">
+  <title>VoiceClip</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <form id="form" autocomplete="off">
+    <label for="cmd">Say or type a command</label>
+    <div class="row">
+      <input id="cmd" type="text" enterkeyhint="go" autocapitalize="off" spellcheck="false"
+             placeholder="copy from FaceTime to location">
+      <button id="mic" type="button" aria-label="Speak a command" hidden>🎙</button>
+    </div>
+    <button id="go" type="submit">Run</button>
+  </form>
+
+  <p id="status" role="status" aria-live="polite"></p>
+  <p id="hint" class="hint">Tip: tap the field, then the 🎙 key on the keyboard to dictate.</p>
+
+  <section id="recentWrap" hidden>
+    <h2>Recent</h2>
+    <ul id="recent"></ul>
+  </section>
+
+  <section>
+    <h2>Examples</h2>
+    <ul id="examples">
+      <li>copy from FaceTime to location</li>
+      <li>copy the paragraph about pricing</li>
+      <li>copy the sentence containing deadline</li>
+      <li>copy from Dear to the end</li>
+      <li>cut from please to thanks</li>
+      <li>select everything</li>
+      <li>paste into email</li>
+    </ul>
+  </section>
+
+  <label class="toggle">
+    <input id="siri" type="checkbox">
+    <span>Listen for Siri commands on the page I'm viewing</span>
+  </label>
+
+  <script src="popup.js"></script>
+</body>
+</html>
