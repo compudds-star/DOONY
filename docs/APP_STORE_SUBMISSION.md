@@ -138,8 +138,14 @@ questionnaire may look unfamiliar. The answers above still resolve to **4+**.
 ## 7. The two review risks
 
 - **Guideline 5.1.1 — background location.** The single most likely cause of a
-  round trip. The justification in `APP_REVIEW_NOTES.md` is written for exactly
-  this. Do not submit without pasting it.
+  round trip, and the one that actually happened: build 1.0 (4) was rejected
+  under 5.1.1(iv) because the button before the system prompt said "Enable
+  Location Access". Any button that leads to an OS permission alert must read
+  "Continue"/"Next", and the copy above it must describe the feature, not steer
+  the answer. Build 1.0 (4) was also rejected under **2.5.4** for declaring the
+  `location` background mode with no persistent-location feature; that mode is
+  now removed. The justification for both is in `APP_REVIEW_NOTES.md`. Do not
+  submit without pasting it.
 - **Guideline 4.2 — minimum functionality.** Lower than it would have been for
   an obviously personal app, because DOONY is substantial and addresses a real
   market. Keep the framing on the general audience: people who keep a home in

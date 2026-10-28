@@ -69,7 +69,11 @@ LocationManager.process(fix)
 ```
 
 No timers, no foreground polling. All wakeups are OS-delivered, which is what
-lets the app survive termination and reboot within the location background mode.
+lets the app survive termination and reboot — the significant-change service and
+region monitoring both relaunch a terminated app without the `location`
+background mode, which DOONY deliberately does not declare (see README).
+Escalated high-accuracy sampling is therefore foreground-only; in the background
+each SLC/region wake takes a single fix at the same accuracy instead.
 
 ## Persistence & protection
 

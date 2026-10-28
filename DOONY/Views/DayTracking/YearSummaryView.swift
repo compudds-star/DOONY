@@ -154,42 +154,52 @@ struct YearSummaryView: View {
         }
     }
 
+    /// Any button that leads to a system permission alert must be neutrally
+    /// worded ("Continue"/"Next") — App Review rejected build 1.0 (4) under
+    /// guideline 5.1.1(iv) because "Enable Location Access" directed the user
+    /// toward one answer. Only the Settings-deep-link cases, which open
+    /// Settings rather than an OS prompt, may name what they do.
     private var authButtonTitle: String {
         switch location.authorizationStatus {
-        case .notDetermined: return "Enable Location Access"
-        case .authorizedWhenInUse: return "Upgrade to “Always” Location"
-        case .denied, .restricted: return "Open Settings to enable Location"
+        case .notDetermined, .authorizedWhenInUse: return "Continue"
+        case .denied, .restricted: return "Open Settings"
         default: return "Open Settings"
         }
     }
 
+    /// Only While-Using needs a second button: its primary action is the OS
+    /// prompt, which iOS may decline to show again. Denied/restricted already
+    /// have "Open Settings" as their primary action — listing it twice was a
+    /// leftover from when the titles differed.
     private var showSettingsFallback: Bool {
-        switch location.authorizationStatus {
-        case .authorizedWhenInUse, .denied, .restricted: return true
-        default: return false
-        }
+        location.authorizationStatus == .authorizedWhenInUse
     }
 
+    /// Explains what the feature does with location; it must not tell the user
+    /// which answer to give the system prompt (guideline 5.1.1(iv)). Stating a
+    /// requirement and pointing at Settings after a denial is allowed.
     private var authHelpText: String {
         switch location.authorizationStatus {
         case .notDetermined:
-            return "Grant location access, then choose “Always” so days are recorded "
-                 + "in the background — including after reboots and while the app is closed."
+            return "DOONY counts your days in and out of New York from your device’s "
+                 + "location. iOS will ask next how you want to share it; day counting "
+                 + "works while the app is closed only with background access."
         case .authorizedWhenInUse:
-            return "You granted “While Using”. Tap “Upgrade to Always” to ask iOS for "
-                 + "background access. If no prompt appears, use “Open Settings instead” "
-                 + "▸ Location ▸ Always, and turn on Precise Location."
+            return "DOONY currently has “While Using” access, so days are only recorded "
+                 + "while the app is open. Continue to see the iOS prompt for background "
+                 + "access, or use “Open Settings instead” ▸ Location, where you can also "
+                 + "turn on Precise Location."
         case .denied, .restricted:
-            return "Location is currently off for DOONY. Open Settings ▸ Location ▸ Always "
-                 + "so days can be recorded in the background."
+            return "Location is off for DOONY, so days can’t be counted automatically. "
+                 + "You can change this any time in Settings ▸ Location."
         default:
-            return "“Always” is required so days are recorded in the background."
+            return "Background access is what lets days be recorded while the app is closed."
         }
     }
 
-    /// Not-determined or While-Using → ask iOS (requestAlwaysAuthorization triggers
-    /// the Always upgrade prompt and makes “Always” selectable in Settings).
-    /// Denied/restricted can only be changed in Settings.
+    /// Not-determined or While-Using → hand off to iOS (requestAlwaysAuthorization
+    /// triggers the Always upgrade prompt and makes “Always” selectable in
+    /// Settings). Denied/restricted can only be changed in Settings.
     private func handleAuthTap() {
         switch location.authorizationStatus {
         case .notDetermined, .authorizedWhenInUse:
@@ -216,8 +226,8 @@ struct YearSummaryView: View {
     private var statusText: String {
         switch location.authorizationStatus {
         case .authorizedAlways: return "Always — tracking in background"
-        case .authorizedWhenInUse: return "When-In-Use only (upgrade to Always)"
-        case .denied, .restricted: return "Location denied — enable in Settings"
+        case .authorizedWhenInUse: return "While Using — no background recording"
+        case .denied, .restricted: return "Location off — days aren’t counted"
         default: return "Not yet authorized"
         }
     }

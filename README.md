@@ -91,9 +91,14 @@ Included in [`DOONY/Info.plist`](DOONY/Info.plist):
 
 - `NSLocationWhenInUseUsageDescription`
 - `NSLocationAlwaysAndWhenInUseUsageDescription`
-- `NSLocationAlwaysUsageDescription` (legacy)
-- `NSLocationTemporaryUsageDescriptionDictionary` → `BorderPrecision`
-- `UIBackgroundModes` = `location`
+- `UIBackgroundModes` = `fetch` only. **Not `location`** — App Review rejected
+  build 1.0 (4) under guideline 2.5.4 for declaring that mode without a
+  persistent real-time location feature. Nothing here needs it: the
+  significant-change service and region monitoring relaunch a terminated app on
+  their own, and `fetch` covers the daily `BGAppRefresh` fix. Re-adding it means
+  shipping an actual continuous-tracking feature and attaching a device screen
+  recording of it to App Review Information.
+- `BGTaskSchedulerPermittedIdentifiers` = `com.doony.app.dailyfix`
 - `ITSAppUsesNonExemptEncryption` = `false` (standard, exempt encryption)
 
 Data protection is enabled via the **Data Protection** capability in

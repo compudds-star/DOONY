@@ -20,7 +20,12 @@ import BackgroundTasks
 /// 3. **Escalation:** only when a fix is within `borderBufferMeters` of the
 ///    boundary do we switch on continuous high-accuracy updates to pin down
 ///    which side of the line the day falls on; we switch them off again once
-///    we're comfortably inside or outside.
+///    we're comfortably inside or outside. This stream is foreground-only —
+///    see the note on `backgroundLocationModeEnabled`.
+///
+/// None of steps 1–2 need the "location" UIBackgroundMode: the significant-
+/// change service and region monitoring relaunch a terminated app on their
+/// own, and the daily BGAppRefresh task covers a fully stationary day.
 ///
 /// No timers, no foreground loop — everything is event-driven by the OS.
 @MainActor
@@ -53,6 +58,12 @@ final class LocationManager: NSObject, ObservableObject {
 
     /// True when Info.plist's UIBackgroundModes contains "location". Guards the
     /// `allowsBackgroundLocationUpdates` setter, which throws otherwise.
+    ///
+    /// Currently FALSE by design: App Review rejected build 1.0 (4) under
+    /// guideline 2.5.4 for declaring that mode without a persistent-location
+    /// feature, so it was removed from Info.plist. The check stays because it
+    /// is the thing that keeps the setter below legal either way — do not
+    /// collapse it into an unconditional `= true`.
     private static let backgroundLocationModeEnabled: Bool = {
         let modes = Bundle.main.object(forInfoDictionaryKey: "UIBackgroundModes") as? [String]
         return modes?.contains("location") ?? false
@@ -75,6 +86,8 @@ final class LocationManager: NSObject, ObservableObject {
         manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
         // Only legal when the "location" background mode is declared in Info.plist;
         // setting it otherwise throws NSInternalInconsistencyException at launch.
+        // With that mode removed the branch is dead in the shipping build, and
+        // background fixes arrive via SLC/region wakes instead of a live stream.
         if Self.backgroundLocationModeEnabled {
             manager.allowsBackgroundLocationUpdates = true
         }
@@ -262,6 +275,9 @@ final class LocationManager: NSObject, ObservableObject {
                 // Only report movement of 25 m+, so a stationary phone near the
                 // line isn't firing constant updates.
                 manager.distanceFilter = 25
+                // Foreground-only stream (no "location" background mode). In the
+                // background iOS suspends it and we fall back to SLC/region wakes,
+                // each of which calls requestLocation() at this same 10 m accuracy.
                 manager.startUpdatingLocation()
             }
         } else {

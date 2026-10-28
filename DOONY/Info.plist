@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.doony.app.dailyfix</string>
+	</array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleExecutable</key>
@@ -14,40 +18,25 @@
 	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
-	<!-- Driven by MARKETING_VERSION / CURRENT_PROJECT_VERSION in project.yml.
-	     Do not hardcode: these were literals, so bumping the build number in
-	     the yml silently shipped the old one and App Store Connect rejected
-	     the upload as a duplicate. -->
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<!-- Background colour only, matching SplashView's ground. Without this the
-	     app flashed white before the dark splash appeared. Deliberately no
-	     UIImageName: the system centres its image, SplashView positions the
-	     logo higher to leave room for the wordmark, and running both produced a
-	     visible double image during the hand-off. The system screen supplies the
-	     colour; SplashView draws everything else. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>DOONY uses your location in the background to automatically count days spent in and out of New York State. Location data never leaves your device.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>DOONY uses your location to determine whether today counts as a day in or out of New York State. Location data never leaves your device.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>
 		<string>SplashGround</string>
 	</dict>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>location</string>
-		<string>fetch</string>
-	</array>
-	<key>BGTaskSchedulerPermittedIdentifiers</key>
-	<array>
-		<string>com.doony.app.dailyfix</string>
-	</array>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>DOONY uses your location in the background to automatically count days spent in and out of New York State. Location data never leaves your device.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>DOONY uses your location to determine whether today counts as a day in or out of New York State. Location data never leaves your device.</string>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
