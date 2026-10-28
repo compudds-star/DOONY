@@ -12,6 +12,8 @@ struct YearSummaryView: View {
     @Query(sort: \DayClassification.dayKey) private var days: [DayClassification]
 
     @State private var selectedYear = NYCalendar.calendar.component(.year, from: .now)
+    @State private var displayedMonth = NYCalendar.calendar.component(.month, from: .now)
+    @State private var selectedDayKey: String?
 
     private var years: [Int] {
         let ys = Set(days.compactMap { Int($0.dayKey.prefix(4)) })
@@ -77,10 +79,11 @@ struct YearSummaryView: View {
                 }
 
                 Section {
+                    monthHeatmap
                     NavigationLink {
                         CalendarHeatmapView(year: selectedYear)
                     } label: {
-                        Label("Calendar heatmap & day drill-down", systemImage: "square.grid.3x3.fill")
+                        Label("Full-year heatmap", systemImage: "square.grid.3x3.fill")
                     }
                 }
 
@@ -92,7 +95,51 @@ struct YearSummaryView: View {
                 }
             }
             .navigationTitle("DOONY")
+            .navigationDestination(item: $selectedDayKey) { DayDetailView(dayKey: $0) }
+            .onChange(of: selectedYear) { _, year in
+                displayedMonth = HeatmapMonthGrid.defaultMonth(for: year)
+            }
         }
+    }
+
+    // MARK: - Month heatmap
+
+    /// One month of the heatmap, inline on the landing screen. Opens on the
+    /// current month; the chevrons step through the selected year.
+    private var monthHeatmap: some View {
+        let byKey = Dictionary(days.map { ($0.dayKey, $0) }, uniquingKeysWith: { a, _ in a })
+        return VStack(spacing: 10) {
+            HStack {
+                Button {
+                    displayedMonth -= 1
+                } label: {
+                    Image(systemName: "chevron.left").frame(minWidth: 44, minHeight: 44)
+                }
+                .disabled(displayedMonth <= 1)
+                .accessibilityLabel("Previous month")
+
+                Spacer()
+                Text("\(HeatmapMonthGrid.monthName(displayedMonth)) \(String(selectedYear))")
+                    .font(.headline)
+                Spacer()
+
+                Button {
+                    displayedMonth += 1
+                } label: {
+                    Image(systemName: "chevron.right").frame(minWidth: 44, minHeight: 44)
+                }
+                .disabled(displayedMonth >= 12)
+                .accessibilityLabel("Next month")
+            }
+            .buttonStyle(.borderless)
+
+            HeatmapMonthGrid(year: selectedYear, month: displayedMonth, byKey: byKey) {
+                selectedDayKey = $0
+            }
+
+            HeatmapLegend()
+        }
+        .padding(.vertical, 4)
     }
 
     // MARK: - Split-flap counts board
